@@ -15,7 +15,6 @@ import {
 
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import mysql from 'mysql2/promise';
-import easyYopmail from 'easy-yopmail';
 
 
 const args = process.argv.slice(2);
@@ -51,51 +50,6 @@ const TOOLS: Tool[] = [
       properties: {
         sql: { type: "string" },
       },
-    },
-  },
-  {
-    name: "yopmail_generate_email",
-    description: "Generate a new random YopMail email address",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
-  },
-  {
-    name: "yopmail_read_inbox",
-    description: "Read emails from a specific YopMail inbox",
-    inputSchema: {
-      type: "object",
-      properties: {
-        email: { 
-          type: "string",
-          description: "The YopMail email address to read from (without @yopmail.com)"
-        },
-      },
-      required: ["email"],
-    },
-  },
-  {
-    name: "yopmail_read_message",
-    description: "Read a specific email message from a YopMail inbox",
-    inputSchema: {
-      type: "object",
-      properties: {
-        email: { 
-          type: "string",
-          description: "The YopMail email address (without @yopmail.com)"
-        },
-        messageId: {
-          type: "string",
-          description: "The ID of the message to read"
-        },
-        format: {
-          type: "string",
-          enum: ["TXT", "HTML"],
-          description: "The format to read the message in"
-        }
-      },
-      required: ["email", "messageId", "format"],
     },
   },
   {
@@ -451,35 +405,6 @@ async function handleToolCall(name: string, args: any): Promise<CallToolResult> 
     } finally {
       connection.release();
     }
-  }
-  if (name === "yopmail_generate_email") {
-    const email = await easyYopmail.getMail();
-    return {
-      content: [{ type: "text", text: JSON.stringify({ email }, null, 2) }],
-      isError: false,
-    };
-  }
-  if (name === "yopmail_read_inbox") {
-    const { email } = args as { email: string };
-    const inbox = await easyYopmail.getInbox(email);
-    return {
-      content: [{ type: "text", text: JSON.stringify(inbox, null, 2) }],
-      isError: false,
-    };
-  }
-  if (name === "yopmail_read_message") {
-    const { email, messageId, format } = args as { 
-      email: string;
-      messageId: string;
-      format: "TXT" | "HTML";
-    };
-    const message = await easyYopmail.readMessage(email, messageId, { 
-      format: format === "TXT" ? "txt" : "html" 
-    });
-    return {
-      content: [{ type: "text", text: JSON.stringify(message, null, 2) }],
-      isError: false,
-    };
   }
   throw new Error(`Unknown tool: ${name}`);
 

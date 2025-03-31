@@ -1,6 +1,6 @@
 {
   "name": "@gotit-qa/qa-mcp",
-  "version": "1.0.4",
+  "version": "1.0.15",
   "description": "Puppeteer Test Automation Framework with reporting and video recording",
   "main": "dist/mcp.js",
   "bin": {
@@ -29,16 +29,12 @@
     "ts-jest": "^29.2.6",
     "@modelcontextprotocol/sdk": "1.0.1",
     "puppeteer": "^19.0.0",
-    "easy-yopmail": "^5.2.1",
     "mysql2": "^3.14.0"
   },
   "devDependencies": {
     "@types/mysql": "^2.15.25",
     "shx": "^0.3.4",
     "typescript": "^5.8.2"
-  },
-  "overrides": {
-    "undici": "5.28.4"
   },
   "repository": {
     "type": "git",
