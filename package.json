@@ -36,6 +36,9 @@
     "shx": "^0.3.4",
     "typescript": "^5.8.2"
   },
+  "overrides": {
+    "undici": "5.28.4"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DucDuong97/qa-mcp.git"
