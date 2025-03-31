@@ -36,7 +36,7 @@ const TOOLS: Tool[] = [
         name: { type: "string", description: "Name for the screenshot" },
         selector: { type: "string", description: "CSS selector for element to screenshot" },
         width: { type: "number", description: "Width in pixels (default: 1200)" },
-        height: { type: "number", description: "Height in pixels (default: 1000)" },
+        height: { type: "number", description: "Height in pixels (default: 600)" },
       },
       required: ["name"],
     },
@@ -112,7 +112,7 @@ async function ensureBrowser() {
   if (!browser) {
     const npx_args = { 
       headless: false,
-      defaultViewport: { width: 1200, height: 1000 }
+      defaultViewport: { width: 1200, height: 600 }
     }
     const docker_args = { headless: true, args: ["--no-sandbox", "--single-process", "--no-zygote"] }
     browser = await puppeteer.launch(process.env.DOCKER_CONTAINER ? docker_args : npx_args);
@@ -156,7 +156,7 @@ async function handleToolCall(name: string, args: any): Promise<CallToolResult> 
 
     case "puppeteer_screenshot": {
       const width = args.width ?? 1200;
-      const height = args.height ?? 1000;
+      const height = args.height ?? 600;
       await page.setViewport({ width, height });
 
       const screenshot = await (args.selector ?

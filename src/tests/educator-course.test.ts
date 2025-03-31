@@ -1,7 +1,6 @@
 import { 
-  runTest,
-  setupLogin
-} from '../helpers/testUtils';
+  runTest
+} from '../helpers/testUtils.js';
 import { Page } from 'puppeteer';
 
 // Set a global Jest timeout

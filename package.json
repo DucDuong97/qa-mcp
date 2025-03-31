@@ -1,20 +1,22 @@
 {
-  "name": "puppeteer-workspace",
-  "version": "1.0.0",
+  "name": "@gotit-qa/qa-mcp",
+  "version": "1.0.2",
   "description": "Puppeteer Test Automation Framework with reporting and video recording",
-  "main": "dist/index.js",
+  "main": "dist/mcp.js",
+  "bin": {
+    "qa-mcp": "./dist/mcp.js"
+  },
   "type": "module",
   "scripts": {
     "test": "jest",
     "test:single": "jest --testNamePattern",
-    "build": "tsc",
+    "build": "tsc && shx chmod +x dist/*.js",
     "clean": "rimraf dist reports videos",
     "lint": "eslint src --ext .ts",
-    "build-mcp": "tsc && shx chmod +x dist/*.js",
     "pretest": "npm run build"
   },
   "keywords": [],
-  "author": "",
+  "author": "dale",
   "license": "ISC",
   "dependencies": {
     "@types/jest": "^29.5.14",
@@ -30,5 +32,13 @@
   "devDependencies": {
     "shx": "^0.3.4",
     "typescript": "^5.8.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DucDuong97/qa-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DucDuong97/qa-mcp/issues"
+  },
+  "homepage": "https://github.com/DucDuong97/qa-mcp#readme"
 }

@@ -22,7 +22,7 @@ A lightweight, straightforward test automation framework using Puppeteer with vi
 npm install
 
 # Build MCP
-npm run build-mcp
+npm run build
 ```
 
 ## Configure Claude MCP
