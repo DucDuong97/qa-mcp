@@ -12,10 +12,92 @@ import {
   ImageContent,
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
+
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
+import mysql from 'mysql2/promise';
+import easyYopmail from 'easy-yopmail';
+
+
+const args = process.argv.slice(2);
+if (args.length === 0) {
+  console.error("Please provide a database URL as a command-line argument");
+  process.exit(1);
+}
+
+const databaseUrl = args[0];
+
+const resourceBaseUrl = new URL(databaseUrl);
+resourceBaseUrl.protocol = "mysql:";
+resourceBaseUrl.password = "";
+
+const dbConfig = new URL(databaseUrl);
+const pool = mysql.createPool({
+  host: dbConfig.hostname,
+  user: dbConfig.username,
+  password: dbConfig.password,
+  database: dbConfig.pathname.substring(1),
+  port: parseInt(dbConfig.port || '3306'),
+  connectionLimit: 10
+});
+
 
 // Define the tools once to avoid repetition
 const TOOLS: Tool[] = [
+  {
+    name: "mysql_query",
+    description: "Run a read-only SQL query",
+    inputSchema: {
+      type: "object",
+      properties: {
+        sql: { type: "string" },
+      },
+    },
+  },
+  {
+    name: "yopmail_generate_email",
+    description: "Generate a new random YopMail email address",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "yopmail_read_inbox",
+    description: "Read emails from a specific YopMail inbox",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email: { 
+          type: "string",
+          description: "The YopMail email address to read from (without @yopmail.com)"
+        },
+      },
+      required: ["email"],
+    },
+  },
+  {
+    name: "yopmail_read_message",
+    description: "Read a specific email message from a YopMail inbox",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email: { 
+          type: "string",
+          description: "The YopMail email address (without @yopmail.com)"
+        },
+        messageId: {
+          type: "string",
+          description: "The ID of the message to read"
+        },
+        format: {
+          type: "string",
+          enum: ["TXT", "HTML"],
+          description: "The format to read the message in"
+        }
+      },
+      required: ["email", "messageId", "format"],
+    },
+  },
   {
     name: "puppeteer_navigate",
     description: "Navigate to a URL",
@@ -141,209 +223,266 @@ declare global {
 }
 
 async function handleToolCall(name: string, args: any): Promise<CallToolResult> {
-  const page = await ensureBrowser();
 
-  switch (name) {
-    case "puppeteer_navigate":
-      await page.goto(args.url);
-      return {
-        content: [{
-          type: "text",
-          text: `Navigated to ${args.url}`,
-        }],
-        isError: false,
-      };
+  if (name.startsWith("puppeteer_")) {
+    const page = await ensureBrowser();
 
-    case "puppeteer_screenshot": {
-      const width = args.width ?? 1200;
-      const height = args.height ?? 600;
-      await page.setViewport({ width, height });
-
-      const screenshot = await (args.selector ?
-        (await page.$(args.selector))?.screenshot({ encoding: "base64" }) :
-        page.screenshot({ encoding: "base64", fullPage: false }));
-
-      if (!screenshot) {
+    switch (name) {
+      case "puppeteer_navigate":
+        await page.goto(args.url);
         return {
           content: [{
             type: "text",
-            text: args.selector ? `Element not found: ${args.selector}` : "Screenshot failed",
-          }],
-          isError: true,
-        };
-      }
-
-      screenshots.set(args.name, screenshot as string);
-      server.notification({
-        method: "notifications/resources/list_changed",
-      });
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Screenshot '${args.name}' taken at ${width}x${height}`,
-          } as TextContent,
-          {
-            type: "image",
-            data: screenshot,
-            mimeType: "image/png",
-          } as ImageContent,
-        ],
-        isError: false,
-      };
-    }
-
-    case "puppeteer_click":
-      try {
-        let selector: string | null = null;
-        let btn: ElementHandle<Element> | null = null;
-        if (args.text) {
-          selector = `text/${args.text}`;
-          btn = await page.waitForSelector(selector);
-        } else if (args.aria_label) {
-          selector = `button[aria-label="${args.aria_label}"]`;
-          btn = await page.waitForSelector(selector);
-        } else if (args.test_id) {
-          selector = `[data-testid="${args.test_id}"]`;
-          btn = await page.waitForSelector(selector);
-        }
-
-        await btn?.click();
-
-        return {
-          content: [{
-            type: "text",
-            text: `Clicked: ${selector}`,
+            text: `Navigated to ${args.url}`,
           }],
           isError: false,
         };
-      } catch (error) {
-        return {
-          content: [{
-            type: "text",
-            text: `Failed to click: ${(error as Error).message}`,
-          }],
-          isError: true,
-        };
-      }
-
-    case "puppeteer_fill":
-      try {
-        await page.waitForSelector(args.selector);
-        await page.type(args.selector, args.value);
-        return {
-          content: [{
-            type: "text",
-            text: `Filled ${args.selector} with: ${args.value}`,
-          }],
-          isError: false,
-        };
-      } catch (error) {
-        return {
-          content: [{
-            type: "text",
-            text: `Failed to fill ${args.selector}: ${(error as Error).message}`,
-          }],
-          isError: true,
-        };
-      }
-
-    case "puppeteer_select":
-      try {
-        await page.waitForSelector(args.selector);
-        await page.select(args.selector, args.value);
-        return {
-          content: [{
-            type: "text",
-            text: `Selected ${args.selector} with: ${args.value}`,
-          }],
-          isError: false,
-        };
-      } catch (error) {
-        return {
-          content: [{
-            type: "text",
-            text: `Failed to select ${args.selector}: ${(error as Error).message}`,
-          }],
-          isError: true,
-        };
-      }
-
-    case "puppeteer_hover":
-      try {
-        await page.waitForSelector(args.selector);
-        await page.hover(args.selector);
-        return {
-          content: [{
-            type: "text",
-            text: `Hovered ${args.selector}`,
-          }],
-          isError: false,
-        };
-      } catch (error) {
-        return {
-          content: [{
-            type: "text",
-            text: `Failed to hover ${args.selector}: ${(error as Error).message}`,
-          }],
-          isError: true,
-        };
-      }
-
-    case "puppeteer_evaluate":
-      try {
-        await page.evaluate(() => {
-          window.mcpHelper = {
-            logs: [],
-            originalConsole: { ...console },
+  
+      case "puppeteer_screenshot": {
+        const width = args.width ?? 1200;
+        const height = args.height ?? 600;
+        await page.setViewport({ width, height });
+  
+        const screenshot = await (args.selector ?
+          (await page.$(args.selector))?.screenshot({ encoding: "base64" }) :
+          page.screenshot({ encoding: "base64", fullPage: false }));
+  
+        if (!screenshot) {
+          return {
+            content: [{
+              type: "text",
+              text: args.selector ? `Element not found: ${args.selector}` : "Screenshot failed",
+            }],
+            isError: true,
           };
-
-          ['log', 'info', 'warn', 'error'].forEach(method => {
-            (console as any)[method] = (...args: any[]) => {
-              window.mcpHelper.logs.push(`[${method}] ${args.join(' ')}`);
-              (window.mcpHelper.originalConsole as any)[method](...args);
-            };
-          } );
-        } );
-
-        const result = await page.evaluate( args.script );
-
-        const logs = await page.evaluate(() => {
-          Object.assign(console, window.mcpHelper.originalConsole);
-          const logs = window.mcpHelper.logs;
-          delete ( window as any).mcpHelper;
-          return logs;
+        }
+  
+        screenshots.set(args.name, screenshot as string);
+        server.notification({
+          method: "notifications/resources/list_changed",
         });
-
+  
         return {
           content: [
             {
               type: "text",
-              text: `Execution result:\n${JSON.stringify(result, null, 2)}\n\nConsole output:\n${logs.join('\n')}`,
-            },
+              text: `Screenshot '${args.name}' taken at ${width}x${height}`,
+            } as TextContent,
+            {
+              type: "image",
+              data: screenshot,
+              mimeType: "image/png",
+            } as ImageContent,
           ],
           isError: false,
         };
-      } catch (error) {
+      }
+  
+      case "puppeteer_click":
+        try {
+          let selector: string | null = null;
+          let btn: ElementHandle<Element> | null = null;
+          if (args.text) {
+            selector = `text/${args.text}`;
+            btn = await page.waitForSelector(selector);
+          } else if (args.aria_label) {
+            selector = `button[aria-label="${args.aria_label}"]`;
+            btn = await page.waitForSelector(selector);
+          } else if (args.test_id) {
+            selector = `[data-testid="${args.test_id}"]`;
+            btn = await page.waitForSelector(selector);
+          }
+  
+          await btn?.click();
+  
+          return {
+            content: [{
+              type: "text",
+              text: `Clicked: ${selector}`,
+            }],
+            isError: false,
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: `Failed to click: ${(error as Error).message}`,
+            }],
+            isError: true,
+          };
+        }
+  
+      case "puppeteer_fill":
+        try {
+          await page.waitForSelector(args.selector);
+          await page.type(args.selector, args.value);
+          return {
+            content: [{
+              type: "text",
+              text: `Filled ${args.selector} with: ${args.value}`,
+            }],
+            isError: false,
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: `Failed to fill ${args.selector}: ${(error as Error).message}`,
+            }],
+            isError: true,
+          };
+        }
+  
+      case "puppeteer_select":
+        try {
+          await page.waitForSelector(args.selector);
+          await page.select(args.selector, args.value);
+          return {
+            content: [{
+              type: "text",
+              text: `Selected ${args.selector} with: ${args.value}`,
+            }],
+            isError: false,
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: `Failed to select ${args.selector}: ${(error as Error).message}`,
+            }],
+            isError: true,
+          };
+        }
+  
+      case "puppeteer_hover":
+        try {
+          await page.waitForSelector(args.selector);
+          await page.hover(args.selector);
+          return {
+            content: [{
+              type: "text",
+              text: `Hovered ${args.selector}`,
+            }],
+            isError: false,
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: `Failed to hover ${args.selector}: ${(error as Error).message}`,
+            }],
+            isError: true,
+          };
+        }
+  
+      case "puppeteer_evaluate":
+        try {
+          await page.evaluate(() => {
+            window.mcpHelper = {
+              logs: [],
+              originalConsole: { ...console },
+            };
+  
+            ['log', 'info', 'warn', 'error'].forEach(method => {
+              (console as any)[method] = (...args: any[]) => {
+                window.mcpHelper.logs.push(`[${method}] ${args.join(' ')}`);
+                (window.mcpHelper.originalConsole as any)[method](...args);
+              };
+            } );
+          } );
+  
+          const result = await page.evaluate( args.script );
+  
+          const logs = await page.evaluate(() => {
+            Object.assign(console, window.mcpHelper.originalConsole);
+            const logs = window.mcpHelper.logs;
+            delete ( window as any).mcpHelper;
+            return logs;
+          });
+  
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Execution result:\n${JSON.stringify(result, null, 2)}\n\nConsole output:\n${logs.join('\n')}`,
+              },
+            ],
+            isError: false,
+          };
+        } catch (error) {
+          return {
+            content: [{
+              type: "text",
+              text: `Script execution failed: ${(error as Error).message}`,
+            }],
+            isError: true,
+          };
+        }
+  
+      default:
         return {
           content: [{
             type: "text",
-            text: `Script execution failed: ${(error as Error).message}`,
+            text: `Unknown tool: ${name}`,
           }],
           isError: true,
         };
-      }
-
-    default:
-      return {
-        content: [{
-          type: "text",
-          text: `Unknown tool: ${name}`,
-        }],
-        isError: true,
-      };
+    }
   }
+
+  if (name === "mysql_query") {
+    const sql = args?.sql as string;
+    
+    // Ensure query is read-only
+    const normalizedSql = sql.trim().toLowerCase();
+    if (!normalizedSql.startsWith('select ') && !normalizedSql.startsWith('show ') && !normalizedSql.startsWith('describe ')) {
+      throw new Error('Only SELECT, SHOW, and DESCRIBE queries are allowed');
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      const [rows] = await connection.query(sql);
+      return {
+        content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+        isError: false,
+      };
+    } catch (error) {
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+  if (name === "yopmail_generate_email") {
+    const email = await easyYopmail.getMail();
+    return {
+      content: [{ type: "text", text: JSON.stringify({ email }, null, 2) }],
+      isError: false,
+    };
+  }
+  if (name === "yopmail_read_inbox") {
+    const { email } = args as { email: string };
+    const inbox = await easyYopmail.getInbox(email);
+    return {
+      content: [{ type: "text", text: JSON.stringify(inbox, null, 2) }],
+      isError: false,
+    };
+  }
+  if (name === "yopmail_read_message") {
+    const { email, messageId, format } = args as { 
+      email: string;
+      messageId: string;
+      format: "TXT" | "HTML";
+    };
+    const message = await easyYopmail.readMessage(email, messageId, { 
+      format: format === "TXT" ? "txt" : "html" 
+    });
+    return {
+      content: [{ type: "text", text: JSON.stringify(message, null, 2) }],
+      isError: false,
+    };
+  }
+  throw new Error(`Unknown tool: ${name}`);
+
 }
 
 const server = new Server(
