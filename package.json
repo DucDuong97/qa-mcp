@@ -1,6 +1,6 @@
 {
   "name": "@gotit-qa/qa-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Puppeteer Test Automation Framework with reporting and video recording",
   "main": "dist/mcp.js",
   "bin": {
@@ -13,7 +13,8 @@
     "build": "tsc && shx chmod +x dist/*.js",
     "clean": "rimraf dist reports videos",
     "lint": "eslint src --ext .ts",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "publish": "npm publish --access public"
   },
   "keywords": [],
   "author": "dale",
