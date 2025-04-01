@@ -20,26 +20,6 @@ A lightweight, straightforward test automation framework using Puppeteer with vi
 ```bash
 # Install dependencies
 npm install
-
-# Build MCP
-npm run build
-```
-
-## Configure Claude MCP
-1. Open Claude Desktop.
-2. Use "Cmd + ," to open the settings, open the "Developer" tab.
-3. Click on "Edit Config".
-4. Open `claude_desktop_config.json` with VS Code.
-5. Add the following configuration:
-```json
-{
-  "mcpServers": {
-    "puppeteer": {
-      "command": "node",
-      "args": ["/Users/<YOU>/projects/puppeteer-workspace/dist/mcp.js"]
-    }
-  }
-}
 ```
 
 ## Project Structure
@@ -69,9 +49,7 @@ import { runTest, navigateTo, clickElement, typeText, TestContext } from '../hel
 
 // Define your test
 test('should perform a task', async () => {
-  await runTest('My Test Name', async (ctx: TestContext) => {
-    const { page } = ctx;
-    
+  await runTest('My Test Name', async (page) => {
     // Navigate to a website
     await navigateTo(page, 'https://example.com');
     
@@ -92,14 +70,6 @@ test('should perform a task', async () => {
 });
 ```
 
-## Helper Functions
-
-The framework provides these simple helper functions:
-
-- `navigateTo(page, url)` - Navigate to a URL
-- `clickElement(page, selector)` - Click on an element
-- `typeText(page, selector, text)` - Type text into an input field
-- `getText(page, selector)` - Get text from an element
 
 ## Running Tests
 
@@ -109,9 +79,6 @@ npx jest
 
 # Run a specific test file
 npx jest path/to/test-file.test.ts
-
-# Build the project
-npm run build
 
 # Clean reports and videos
 npm run clean

@@ -352,7 +352,7 @@ async function handleToolCall(name: string, args: any): Promise<CallToolResult> 
             const logs = window.mcpHelper.logs;
             delete ( window as any).mcpHelper;
             return logs;
-          });
+          }) || [];
   
           return {
             content: [
@@ -412,7 +412,7 @@ async function handleToolCall(name: string, args: any): Promise<CallToolResult> 
 
 const server = new Server(
   {
-    name: "gotit/test-automation",
+    name: "gotit/qa-mcp",
     version: "0.1.0",
   },
   {

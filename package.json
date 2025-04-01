@@ -1,6 +1,6 @@
 {
   "name": "@gotit-qa/qa-mcp",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Puppeteer Test Automation Framework with reporting and video recording",
   "main": "dist/mcp.js",
   "bin": {
