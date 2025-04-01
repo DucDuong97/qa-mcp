@@ -252,7 +252,7 @@ async function handleToolCall(name: string, args: any): Promise<CallToolResult> 
           return {
             content: [{
               type: "text",
-              text: `Clicked: ${selector}`,
+              text: `Selector: ${selector}`,
             }],
             isError: false,
           };
