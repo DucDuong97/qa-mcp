@@ -1,5 +1,5 @@
-import { Page } from 'puppeteer';
-import { runTest } from '../helpers/puppeteerUtils.ts';
+import { Page, expect } from '@playwright/test';
+import { runTest } from '../helpers/playwrightUtils.ts';
 
 
 test('should do an action', async () => {
@@ -9,7 +9,6 @@ test('should do an action', async () => {
     'Do an action', 
     testFn, { 
     headless: false,
-    slowMo: 100,
     recordVideo: true,
     timeout: 60000,
     setupLogin: {

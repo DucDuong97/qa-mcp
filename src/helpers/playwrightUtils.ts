@@ -42,7 +42,7 @@ export async function runTest(
   // Default options
   const opts = {
     headless: true,
-    slowMo: 100,
+    slowMo: 500,
     recordVideo: true,
     timeout: 60000,
     viewportWidth: 1280,
@@ -62,6 +62,7 @@ export async function runTest(
     // Setup phase - launch browser
     ctx.browser = await chromium.launch({
       headless: opts.headless,
+      slowMo: opts.slowMo,
       args: [
         '--disable-gpu',
         '--disable-web-security',
@@ -77,27 +78,12 @@ export async function runTest(
       recordVideo: opts.recordVideo ? {
         dir: path.join(process.cwd(), 'reports', 'videos'),
         size: { width: 1280, height: 720 }
-      } : undefined
+      } : undefined,
     });
 
     // Set timeouts and add artificial delay between actions
     ctx.context.setDefaultTimeout(opts.timeout);
     ctx.context.setDefaultNavigationTimeout(opts.navigationTimeout);
-    if (opts.slowMo) {
-      await ctx.context.addInitScript(`
-        window.addEventListener('DOMContentLoaded', () => {
-          const originalClick = HTMLElement.prototype.click;
-          HTMLElement.prototype.click = function() {
-            return new Promise(resolve => {
-              setTimeout(() => {
-                originalClick.call(this);
-                resolve();
-              }, ${opts.slowMo});
-            });
-          };
-        });
-      `);
-    }
 
     // Create a new page
     ctx.page = await ctx.context.newPage();

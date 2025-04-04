@@ -1,0 +1,230 @@
+body {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 15px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  text-align: center;
+}
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  font-size: 13px;
+}
+button:hover {
+  opacity: 0.9;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+#recordBtn {
+  background-color: #ff4444;
+  color: white;
+}
+#recordBtn.recording {
+  background-color: #666;
+}
+#generateBtn {
+  background-color: #4CAF50;
+  color: white;
+}
+#clearBtn {
+  background-color: #666;
+  color: white;
+}
+#addAssertionBtn {
+  background-color: #2196F3;
+  color: white;
+}
+.test-options {
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.test-options label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #666;
+}
+.test-options input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.action-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+}
+.action-item {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+}
+.action-item:hover {
+  background: #f5f5f5;
+}
+.action-item .type {
+  font-weight: bold;
+  color: #2196F3;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.action-item .description {
+  color: #666;
+  margin-left: 8px;
+  font-size: 14px;
+}
+.delete-action {
+  color: #ff4444;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 4px 8px;
+}
+.code-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.code-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.tool-select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background-color: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+.tool-select:hover {
+  border-color: #2196F3;
+}
+.tool-select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+.status-bar {
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.recording-indicator.active::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+.action-item.dragging {
+  opacity: 0.3;
+  background: #f5f5f5;
+  cursor: grabbing;
+}
+
+.drag-handle {
+  color: #999;
+  margin-right: 12px;
+  cursor: grab;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.drag-handle svg {
+  width: 18px;
+  margin-bottom: -4px;
+}
+
+.action-item.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.assertion-tools {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.assertion-btn {
+  background-color: #2196F3;
+  color: white;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.assertion-btn:disabled {
+  background-color: #90CAF9;
+}

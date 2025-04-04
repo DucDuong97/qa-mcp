@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Recorder Studio</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Recorder Studio</h2>
+      <div class="controls">
+        <button id="recordBtn">Start Recording</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+      <div class="assertion-tools">
+        <button id="assertTextBtn" class="assertion-btn" disabled>Assert Text</button>
+        <button id="assertColorBtn" class="assertion-btn" disabled>Assert Color</button>
+        <button id="assertVisibleBtn" class="assertion-btn" disabled>Assert Visible</button>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="recording-indicator">
+        <span id="recordingStatus">Not Recording</span>
+      </div>
+      <div id="actionCount">0 actions recorded</div>
+    </div>
+
+    <div class="action-list" id="actionList">
+      <div class="action-item">No actions recorded yet</div>
+    </div>
+
+    <div class="code-section">
+      <div class="code-controls">
+        <select id="toolSelect" class="tool-select">
+          <option value="puppeteer">Puppeteer</option>
+          <option value="playwright">Playwright</option>
+        </select>
+        <button id="generateBtn">Generate Test Code</button>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html> 
