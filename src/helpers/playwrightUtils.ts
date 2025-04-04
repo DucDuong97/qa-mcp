@@ -229,4 +229,21 @@ async function teardown(ctx: TestContext): Promise<void> {
   } catch (error) {
     console.error('Error during test teardown:', error);
   }
-} 
+}
+
+
+export async function escapeUserGuide(page: Page) {
+  let okGotIt = page.getByText('OK, got it', { exact: true });
+  while (true) {
+    try {
+      await okGotIt.waitFor({ state: 'visible', timeout: 3000 });
+      await okGotIt.click();
+      // Re-query the button after clicking as the previous reference might be stale
+      okGotIt = page.getByText('OK, got it', { exact: true });
+    } catch (error) {
+      // No more buttons found, break the loop
+      console.log('No more OK, got it buttons found');
+      break;
+    }
+  }
+}

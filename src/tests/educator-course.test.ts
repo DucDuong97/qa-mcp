@@ -1,24 +1,21 @@
-import { runTest } from '../helpers/playwrightUtils';
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
+import { runTest } from '../helpers/playwrightUtils.ts';
+import { getTestConfig } from '../config/test-config.ts';
 
 test('should create a course', async () => {
   console.log('🚀 Starting course creation test...');
   
   await runTest(
     'Create a course', 
-    testFn, { 
-    headless: false,
-    slowMo: 1000,
-    recordVideo: true,
-    timeout: 30000,
-    setupLogin: {
+    testFn,
+    getTestConfig({
       env: 'poc',
       role: 'educator',
       email: 'ducdm@gotitapp.co',
       password: 'GotIt123'
-    }
-  });
+    })
+  );
   
   console.log('🎉 Test completed successfully!');
 });

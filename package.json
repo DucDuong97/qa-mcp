@@ -14,7 +14,9 @@
     "clean": "rimraf dist reports videos",
     "lint": "eslint src --ext .ts",
     "pretest": "npm run build",
-    "publish": "npm publish --access public"
+    "publish": "npm publish --access public",
+    "test:dev": "TEST_MODE=development jest",
+    "test:regression": "TEST_MODE=regression jest --testPathPattern"
   },
   "keywords": [],
   "author": "dale",

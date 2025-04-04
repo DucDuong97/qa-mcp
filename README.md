@@ -43,43 +43,92 @@ puppeteer-workspace/
 
 ## Creating a New Test
 
-Creating a test is straightforward and doesn't require complex abstractions:
+Creating a test is straightforward using the recorder-studio extension:
 
-```typescript
-import { runTest, navigateTo, clickElement, typeText, TestContext } from '../helpers/testUtils';
+1. **Create Test File**
+   - Navigate to `src/tests` directory
+   - Duplicate `sample.test.ts`
+   - Rename it to reflect your test case (e.g., `login-flow.test.ts`)
+   - Update the test description and configure login credentials:
+   ```typescript
+   test('should [your test description]', async () => {
+     await runTest(
+       '[Your Test Name]', 
+       testFn,
+       getTestConfig({
+         env: 'your-env',
+         role: 'your-role',
+         email: 'your-email',
+         password: 'your-password'
+       })
+     );
+   });
+   ```
 
-// Define your test
-test('should perform a task', async () => {
-  await runTest('My Test Name', async (page) => {
-    // Navigate to a website
-    await navigateTo(page, 'https://example.com');
-    
-    // Interact with page elements
-    await typeText(page, '.search-input', 'search term');
-    await clickElement(page, '.submit-button');
-    
-    // Make assertions
-    const title = await page.title();
-    expect(title).toContain('Expected Text');
-  }, {
-    headless: true,
-    slowMo: 50,
-    recordVideo: true,
-    timeout: 30000
-  });
-});
-```
+2. **Record Test Steps**
+   - Open the recorder-studio extension
+   - Click "Start Recording"
+   - Perform your test actions manually in the browser
+   - Use assertion buttons for verifying text, colors, or visibility
+   - Click "Pause Recording" when done
+
+3. **Generate Test Code**
+   - In the recorder-studio extension:
+     - Select "Playwright" from the dropdown (recommended)
+     - Click "Generate Test Code"
+   - Replace the empty `testFn` in your test file with the generated code
+
+4. **Run Your Test**
+   ```bash
+   # Run your specific test
+   npx jest path/to/your-test.test.ts
+   ```
+
+The recorder-studio extension will automatically generate appropriate selectors and assertions based on your recorded actions. The generated code includes proper waits and error handling.
 
 ## Running Tests
 
+There are two main use cases for running tests:
+
+### 1. Development Mode (Building Test Scripts)
+
+When building and debugging individual test scripts, use development mode. This mode runs tests with:
+- Visible browser for visual feedback
+- Slow motion (1000ms) for better observation
+- No video recording
+- Login credentials configured per test file
+
 ```bash
-# Run all tests
-npx jest
+# Run a specific test in development mode
+npm run test:dev path/to/test-file.test.ts
 
-# Run a specific test file
-npx jest path/to/test-file.test.ts
+# Example:
+npm run test:dev src/tests/login-flow.test.ts
+```
 
-# Clean reports and videos
+### 2. Regression Testing Mode
+
+For running multiple tests as part of regression testing. This mode runs with:
+- Headless browser for faster execution
+- Moderate slow motion (200ms)
+- Video recording enabled
+- Configurable login credentials
+
+```bash
+# Run all tests in a specific folder
+npm run test:regression src/tests/folder-name
+
+# Run with specific login credentials
+TEST_EMAIL=user@example.com TEST_PASSWORD=pass123 TEST_ENV=app-dev npm run test:regression src/tests/folder-name
+
+# Example:
+npm run test:regression src/tests/auth
+```
+
+### Additional Commands
+
+```bash
+# Clean up test artifacts (reports and videos)
 npm run clean
 ```
 
