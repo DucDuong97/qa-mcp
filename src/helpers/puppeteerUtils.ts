@@ -23,7 +23,7 @@ export interface TestOptions {
   timeout?: number;
   viewportWidth?: number;
   viewportHeight?: number;
-  defaultNavigationTimeout?: number;
+  navigationTimeout?: number;
   setupLogin?: {
     env: string;
     role: string;
@@ -48,7 +48,7 @@ export async function runTest(
     timeout: 60000, // Increase default timeout
     viewportWidth: 1280,
     viewportHeight: 800,
-    defaultNavigationTimeout: 60000, // Separate navigation timeout
+    navigationTimeout: 60000, // Separate navigation timeout
     ...options
   };
 
@@ -78,7 +78,7 @@ export async function runTest(
     ctx.page = await ctx.browser.newPage();
     
     // Set timeouts
-    ctx.page.setDefaultNavigationTimeout(opts.defaultNavigationTimeout);
+    ctx.page.setDefaultNavigationTimeout(opts.navigationTimeout);
     ctx.page.setDefaultTimeout(opts.timeout);
 
     // Add error handling for console errors

@@ -1,5 +1,5 @@
-import { Page } from 'puppeteer';
-import { runTest } from '../helpers/testUtils.ts';
+import { runTest } from '../helpers/playwrightUtils';
+import { Page } from '@playwright/test';
 
 
 test('should create a course', async () => {
@@ -9,7 +9,7 @@ test('should create a course', async () => {
     'Create a course', 
     testFn, { 
     headless: false,
-    slowMo: 100,
+    slowMo: 1000,
     recordVideo: true,
     timeout: 30000,
     setupLogin: {
@@ -25,80 +25,112 @@ test('should create a course', async () => {
 
 
 async function testFn(page: Page) {
-  // Find the button with text "Create new course" and click this button
-  await page.waitForSelector('text/Create new course');
-  await page.click('text/Create new course');
-  
-  // Make sure you see the title "Create Course"
-  await page.waitForSelector('text/Create Course');
-  
-  // Click on the button "Manually create"
-  await page.waitForSelector('text/Manually create');
-  await page.click('text/Manually create');
-  
-  // Make sure you see the title "Course information"
-  await page.waitForSelector('text/Course information');
-  
-  // In the field "Course name", type "Magic course"
-  await page.waitForSelector('input[placeholder="Enter course name"]');
-  await page.type('input[placeholder="Enter course name"]', 'Magic course');
-  
-  // In the field "Course subject", open the select dropdown and select "Calculus"
-  await page.waitForSelector('[data-testid="courseSubject-selector"]');
-  await page.click('[data-testid="courseSubject-selector"]');
-  await page.waitForSelector('text/Calculus');
-  await page.click('text/Calculus');
-  
-  // In the field "Start date", open the date picker and select the 12nd day of next month
-  await page.waitForSelector('[data-testid="date-picker__startDate"]');
-  await page.click('[data-testid="date-picker__startDate"]');
-  
-  // Click on right single chevron to move to next month
-  await page.waitForSelector('text/›');
-  await page.click('text/›');
-  
-  // Select the 12th day
-  await page.waitForSelector('text/12');
-  await page.click('text/12');
-  
-  // In the field "End date", open the date picker and select the 16th day of next month
-  await page.waitForSelector('[data-testid="date-picker__endDate"]');
-  await page.click('[data-testid="date-picker__endDate"]');
-  
-  // Click on right single chevron to move to next month
-  await page.waitForSelector('text/›');
-  await page.click('text/›');
-  
-  // Select the 16th day
-  await page.waitForSelector('text/16');
-  await page.click('text/16');
-  
-  // For "Course Plan", select "Advanced"
-  await page.waitForSelector('text/Advanced');
-  await page.click('text/Advanced');
-  
-  // Click on the button with the testid "manually-create-course-btn"
-  await page.waitForSelector('[data-testid="manually-create-course-btn"]');
-  await page.click('[data-testid="manually-create-course-btn"]');
-  
-  // Check if the pop up with title "Confirmation" is displayed
-  await page.waitForSelector('text/Confirmation');
-  
-  // Click on "Confirm" button
-  await page.waitForSelector('[data-testid="modal-primary-button"]');
-  await page.click('[data-testid="modal-primary-button"]');
-  
-  // Wait until the action is executed successfully
-  // Check if the page contains the title "Add textbooks to your course"
-  await page.waitForSelector('text/Add textbooks to your course');
-  
-  // Click on the "Do later" button
-  await page.waitForSelector('text/Do later');
-  await page.click('text/Do later');
-  
-  // Confirm that you see a welcome banner (checking if we're on the course page)
-  await page.waitForSelector('text/Content');
-  
-  // Additional check to verify we're on the right page by looking for course name
-  await page.waitForSelector('text/Magic course');
+  try {
+    console.log('📝 Starting course creation flow...');
+
+    // Find and click "Create new course" button
+    console.log('🔍 Looking for "Create new course" button...');
+    const createButton = page.getByText('Create new course', { exact: true });
+    await createButton.waitFor({ state: 'visible' });
+    await createButton.click();
+    console.log('✅ Clicked create new course button');
+    
+    // Verify "Create Course" title is visible
+    console.log('🔍 Verifying create course page...');
+    await page.getByText('Create Course', { exact: true }).waitFor({ state: 'visible' });
+    console.log('✅ On create course page');
+    
+    // Click "Manually create" button
+    console.log('🖱️ Selecting manual creation...');
+    const manualButton = page.getByText('Manually create', { exact: true });
+    await manualButton.waitFor({ state: 'visible' });
+    await manualButton.click({ force: true });
+    console.log('✅ Manual creation selected');
+    
+    // Verify "Course information" title is visible
+    console.log('🔍 Verifying course information form...');
+    await page.getByText('Course information', { exact: true }).waitFor({ state: 'visible' });
+    console.log('✅ Course information form loaded');
+    
+    // Fill in course details
+    console.log('📝 Filling course details...');
+    
+    // Course name
+    const courseNameInput = page.getByPlaceholder('Enter course name', { exact: true });
+    await courseNameInput.waitFor({ state: 'visible' });
+    await courseNameInput.fill('Magic course');
+    console.log('✅ Course name filled');
+    
+    // Course subject
+    const subjectSelector = page.getByTestId('courseSubject-selector');
+    await subjectSelector.waitFor({ state: 'visible' });
+    await subjectSelector.click();
+    const calculusOption = page.getByText('Calculus', { exact: true });
+    await calculusOption.waitFor({ state: 'visible' });
+    await calculusOption.click();
+    console.log('✅ Course subject selected');
+    
+    // Date selection
+    console.log('📅 Setting course dates...');
+    // Start date
+    const startDatePicker = page.getByTestId('date-picker__startDate');
+    await startDatePicker.waitFor({ state: 'visible' });
+    await startDatePicker.click();
+    const nextMonthButton = page.getByText('›', { exact: true });
+    await nextMonthButton.waitFor({ state: 'visible' });
+    await nextMonthButton.click();
+    const day12 = page.getByText('12', { exact: true });
+    await day12.waitFor({ state: 'visible' });
+    await day12.click();
+    console.log('✅ Start date set');
+    
+    // End date
+    const endDatePicker = page.getByTestId('date-picker__endDate');
+    await endDatePicker.waitFor({ state: 'visible' });
+    await endDatePicker.click();
+    await nextMonthButton.waitFor({ state: 'visible' });
+    await nextMonthButton.click();
+    const day16 = page.getByText('16', { exact: true });
+    await day16.waitFor({ state: 'visible' });
+    await day16.click();
+    console.log('✅ End date set');
+    
+    // Course plan
+    const advancedPlan = page.getByText('Advanced', { exact: true });
+    await advancedPlan.waitFor({ state: 'visible' });
+    await advancedPlan.click();
+    console.log('✅ Course plan selected');
+    
+    // Submit form
+    console.log('📤 Submitting course creation...');
+    const submitButton = page.getByTestId('manually-create-course-btn');
+    await submitButton.waitFor({ state: 'visible' });
+    await submitButton.click();
+    
+    // Handle confirmation
+    console.log('🔍 Waiting for confirmation dialog...');
+    await page.getByText('Confirmation', { exact: true }).waitFor({ state: 'visible' });
+    const confirmButton = page.getByTestId('modal-primary-button');
+    await confirmButton.waitFor({ state: 'visible' });
+    await confirmButton.click();
+    console.log('✅ Confirmed course creation');
+    
+    // Handle textbook setup
+    console.log('📚 Handling textbook setup...');
+    await page.getByText('Add textbooks to your course', { exact: true }).waitFor({ state: 'visible' });
+    const skipButton = page.getByText('Do later', { exact: true });
+    await skipButton.waitFor({ state: 'visible' });
+    await skipButton.click();
+    console.log('✅ Skipped textbook setup');
+    
+    // Verify successful creation
+    console.log('🔍 Verifying course creation...');
+    await page.getByText('Content', { exact: true }).waitFor({ state: 'visible' });
+    await page.getByText('Magic course', { exact: true }).waitFor({ state: 'visible' });
+    console.log('✅ Course created successfully!');
+
+  } catch (error) {
+    console.error('❌ Error during course creation:', error);
+    throw error;
+  }
 }

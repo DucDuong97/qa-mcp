@@ -1,5 +1,5 @@
 import { Page } from 'puppeteer';
-import { runTest } from '../helpers/testUtils.ts';
+import { runTest } from '../helpers/puppeteerUtils.ts';
 
 
 test('should do an action', async () => {

@@ -29,12 +29,14 @@
     "ts-jest": "^29.2.6",
     "@modelcontextprotocol/sdk": "1.0.1",
     "puppeteer": "^19.0.0",
-    "mysql2": "^3.14.0"
+    "mysql2": "^3.14.0",
+    "@playwright/test": "^1.42.1"
   },
   "devDependencies": {
     "@types/mysql": "^2.15.25",
     "shx": "^0.3.4",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "@types/node": "^20.11.24"
   },
   "repository": {
     "type": "git",

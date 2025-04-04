@@ -1,9 +1,10 @@
 # Test Automation Framework
 
-A lightweight, straightforward test automation framework using Puppeteer with video recording and detailed reporting capabilities.
+A lightweight, straightforward test automation framework supporting both Puppeteer and Playwright with video recording and detailed reporting capabilities.
 
 ## Features
 
+- 🔄 **Multiple Browser Automation** - Support for both Puppeteer and Playwright
 - 📊 **Simplified Design** - Direct, functional approach without complex layers
 - 📝 **HTML Reports** - Detailed test execution reports through Jest
 - 🎥 **Video Recording** - Records videos of test execution
@@ -61,7 +62,6 @@ test('should perform a task', async () => {
     const title = await page.title();
     expect(title).toContain('Expected Text');
   }, {
-    // Test configuration options
     headless: true,
     slowMo: 50,
     recordVideo: true,
@@ -69,7 +69,6 @@ test('should perform a task', async () => {
   });
 });
 ```
-
 
 ## Running Tests
 
@@ -96,13 +95,21 @@ Test execution videos are automatically saved to the `videos` directory. Each vi
 
 Screenshots are automatically captured when tests fail and saved in the `reports/screenshots` directory.
 
-## Advantages of This Approach
+## Choosing Between Puppeteer and Playwright
 
-1. **Simplicity** - Function-based approach is easier to understand and maintain
-2. **No Complex Abstractions** - Direct access to Puppeteer API without multiple layers
-3. **Middleware Pattern** - Clean way to handle test setup and teardown
-4. **Focused Tests** - Tests focus on actions and assertions, not on complex page objects
-5. **Easier Debugging** - Simpler stack traces and more direct error messages
+Both tools are excellent choices for browser automation, but they have different strengths:
+
+### Puppeteer
+- Direct integration with Chrome DevTools Protocol
+- Lighter weight if you only need Chrome/Chromium
+- Simpler API for basic automation tasks
+
+### Playwright
+- Multi-browser support (Chromium, Firefox, WebKit)
+- More built-in features for modern web testing
+- Better handling of modern web features and auto-waiting
+
+Choose the tool that best fits your specific needs and browser requirements.
 
 ## Troubleshooting
 
