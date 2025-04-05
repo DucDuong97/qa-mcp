@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const codeOutput = document.getElementById('codeOutput');
   const recordingStatus = document.getElementById('recordingStatus');
   const actionCount = document.getElementById('actionCount');
+  const toolSelect = document.getElementById('toolSelect');
+  const pageSelect = document.getElementById('pageSelect');
 
   // Load saved actions
   console.log('💾 Loading saved data from storage...');
@@ -112,8 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   generateBtn.addEventListener('click', () => {
     console.log('⚙️ Generating test code');
-    const selectedTool = document.getElementById('toolSelect').value;
-    const code = selectedTool === 'puppeteer' ? generatePuppeteerCode() : generatePlaywrightCode();
+    const selectedTool = toolSelect.value;
+    const selectedPage = pageSelect.value;
+    const code = selectedTool === 'puppeteer' 
+      ? generatePuppeteerCode(selectedPage) 
+      : generatePlaywrightCode(selectedPage);
     console.log('📜 Generated code:', code);
     
     // Open code viewer in new tab with the generated code
@@ -248,85 +253,88 @@ function updateActionList() {
   });
 }
 
-function generatePuppeteerCode() {
-  console.log('⚙️ Starting code generation');
+function generatePuppeteerCode(pageName = 'page') {
+  console.log(`⚙️ Starting Puppeteer code generation for ${pageName}`);
   
-  let code = `async function testFn(page: Page) {\n`;
+  let code = "";
   
   recordedActions.forEach((action, index) => {
     console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
     switch (action.type) {
       case 'click':
         if (action.selector.startsWith('text/')) {
-          code += `    await page.waitForSelector('${action.selector}');\n`;
-          code += `    await page.click('${action.selector}');\n\n`;
+          code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
+          code += `    await ${pageName}.click('${action.selector}');\n\n`;
         } else {
-          code += `    await page.waitForSelector('${action.selector}');\n`;
-          code += `    await page.click('${action.selector}');\n\n`;
+          code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
+          code += `    await ${pageName}.click('${action.selector}');\n\n`;
         }
         break;
       case 'type':
-        code += `    await page.waitForSelector('${action.selector}');\n`;
-        code += `    await page.type('${action.selector}', '${action.value}');\n\n`;
+        code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
+        code += `    await ${pageName}.type('${action.selector}', '${action.value}');\n\n`;
         break;
       case 'select':
-        code += `    await page.waitForSelector('${action.selector}');\n`;
-        code += `    await page.select('${action.selector}', '${action.value}');\n\n`;
+        code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
+        code += `    await ${pageName}.select('${action.selector}', '${action.value}');\n\n`;
         break;
       case 'assertion':
-        code += `    await expect(page).toMatchElement('${action.selector}', {\n`;
+        code += `    await expect(${pageName}).toMatchElement('${action.selector}', {\n`;
         code += `      text: '${action.expectedText}'\n`;
         code += `    });\n\n`;
         break;
       case 'color-assertion':
-        code += `    const element = await page.$('${action.selector}');\n`;
-        code += `    const color = await page.evaluate(el => getComputedStyle(el).color, element);\n`;
+        code += `    const element = await ${pageName}.$('${action.selector}');\n`;
+        code += `    const color = await ${pageName}.evaluate(el => getComputedStyle(el).color, element);\n`;
         code += `    expect(color).toBe('${action.expectedColor}');\n\n`;
         break;
       case 'visible':
-        code += `    await expect(page).toMatchElement('${action.selector}', {\n`;
-        code += `      visible: true\n`;
+        code += `    await expect(${pageName}).toMatchElement('${action.selector}', {\n`;
+        code += `    visible: true\n`;
         code += `    });\n\n`;
         break;
     }
   });
 
-  code += '}';
+  code += "";
   
   console.log('✅ Code generation complete');
   return code;
 }
 
-function generatePlaywrightCode() {
-  console.log('⚙️ Starting Playwright code generation');
+function generatePlaywrightCode(pageName = 'page') {
+  console.log(`⚙️ Starting Playwright code generation for ${pageName}`);
   
-  let code = `async function testFn(page: Page) {\n`;
+  let code = `async function testFn({ ${pageName} }: TestContext) {\n`;
+  code += `  if (!${pageName}) {\n`;
+  code += `    throw new Error('${pageName} not initialized');\n`;
+  code += `  }\n\n`;
   
   recordedActions.forEach((action, index) => {
     console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
     switch (action.type) {
       case 'click':
         if (action.selector.startsWith('text/')) {
-          code += `    await page.getByText('${action.selector.replace('text/', '')}', { exact: true }).waitFor({ state: 'visible' });\n`;
-          code += `    await page.getByText('${action.selector.replace('text/', '')}', { exact: true }).click();\n\n`;
+          code += `  await ${pageName}.getByText('${action.selector.replace('text/', '')}', { exact: true }).waitFor({ state: 'visible' });\n`;
+          code += `  await ${pageName}.getByText('${action.selector.replace('text/', '')}', { exact: true }).click();\n\n`;
         } else {
-          code += `    await page.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-          code += `    await page.locator('${action.selector}').click();\n\n`;
+          code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
+          code += `  await ${pageName}.locator('${action.selector}').click();\n\n`;
         }
         break;
       case 'type':
-        code += `    await page.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `    await page.locator('${action.selector}').fill('${action.value}');\n\n`;
+        code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `  await ${pageName}.locator('${action.selector}').fill('${action.value}');\n\n`;
         break;
       case 'select':
-        code += `    await page.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `    await page.locator('${action.selector}').selectOption('${action.value}');\n\n`;
+        code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `  await ${pageName}.locator('${action.selector}').selectOption('${action.value}');\n\n`;
         break;
       case 'assertion':
-        code += `    await expect(page.getByText('${action.expectedText}', { exact: true })).toBeVisible();\n\n`;
+        code += `  await expect(${pageName}.getByText('${action.expectedText}', { exact: true })).toBeVisible();\n\n`;
         break;
       case 'visible':
-        code += `    await expect(page.locator('${action.selector}')).toBeVisible();\n\n`;
+        code += `  await expect(${pageName}.locator('${action.selector}')).toBeVisible();\n\n`;
         break;
     }
   });

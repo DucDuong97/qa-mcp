@@ -32,11 +32,25 @@
 
     <div class="code-section">
       <div class="code-controls">
-        <select id="toolSelect" class="tool-select">
-          <option value="puppeteer">Puppeteer</option>
-          <option value="playwright">Playwright</option>
-        </select>
-        <button id="generateBtn">Generate Test Code</button>
+        <div class="select-fields">
+          <div class="select-container">
+            <label for="toolSelect">Tool:</label>
+            <select id="toolSelect" class="tool-select">
+              <option value="puppeteer">Puppeteer</option>
+              <option value="playwright">Playwright</option>
+            </select>
+          </div>
+          <div class="select-container">
+            <label for="pageSelect">Page Object:</label>
+            <select id="pageSelect" class="page-select">
+              <option value="instructorPage" selected>Instructor Page</option>
+              <option value="studentPage">Student Page</option>
+              <option value="superAdminPage">Super Admin Page</option>
+              <option value="collegeInstructorPage">College Instructor Page</option>
+            </select>
+          </div>
+        </div>
+        <button id="generateBtn">Generate Code</button>
       </div>
     </div>
   </div>

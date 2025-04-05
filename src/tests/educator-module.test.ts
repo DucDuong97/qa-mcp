@@ -1,6 +1,6 @@
 import { Page, expect } from '@playwright/test';
 
-import { runTest, escapeUserGuide } from '../helpers/playwrightUtils.ts';
+import { runTest, escapeUserGuide, TestContext } from '../helpers/playwrightUtils.ts';
 import { getTestConfig } from '../config/test-config.ts';
 
 test('should create and delete a module', async () => {
@@ -10,46 +10,51 @@ test('should create and delete a module', async () => {
     'Create and delete module', 
     testFn,
     getTestConfig({
-      env: 'poc',
-      role: 'educator',
-      email: 'ducdm@gotitapp.co',
-      password: 'GotIt123'
+      instructorLogin: {
+        env: 'poc',
+        email: 'ducdm@gotitapp.co',
+        password: 'GotIt123'
+      }
     })
   );
   
   console.log('🎉 Test completed successfully!');
 });
 
-async function testFn(page: Page) {
-  await openFirstCourse(page);
+async function testFn({ instructorPage }: TestContext) {
+  if (!instructorPage) {
+    throw new Error('Instructor page not initialized');
+  }
 
-  await page.getByText('Add new module', { exact: true }).first().waitFor({ state: 'visible' });
-  await page.getByText('Add new module', { exact: true }).first().click();
+  await openFirstCourse(instructorPage);
 
-  await page.locator('[data-testid="add-new-module-option"]').waitFor({ state: 'visible' });
-  await page.locator('[data-testid="add-new-module-option"]').click();
+  await instructorPage.getByText('Add new module', { exact: true }).first().waitFor({ state: 'visible' });
+  await instructorPage.getByText('Add new module', { exact: true }).first().click();
 
-  await page.locator('input[placeholder="Enter module name"]').waitFor({ state: 'visible' });
-  await page.locator('input[placeholder="Enter module name"]').click();
+  await instructorPage.locator('[data-testid="add-new-module-option"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="add-new-module-option"]').click();
 
-  await page.locator('input[placeholder="Enter module name"]').waitFor({ state: 'visible' });
-  await page.locator('input[placeholder="Enter module name"]').fill('magice module');
+  await instructorPage.locator('input[placeholder="Enter module name"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('input[placeholder="Enter module name"]').click();
 
-  await page.getByText('Create module', { exact: true }).waitFor({ state: 'visible' });
-  await page.getByText('Create module', { exact: true }).click();
+  await instructorPage.locator('input[placeholder="Enter module name"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('input[placeholder="Enter module name"]').fill('magice module');
 
-  await escapeUserGuide(page);
+  await instructorPage.getByText('Create module', { exact: true }).waitFor({ state: 'visible' });
+  await instructorPage.getByText('Create module', { exact: true }).click();
 
-  await expect(page.getByText('magice module', { exact: true })).toBeVisible();
+  await escapeUserGuide(instructorPage);
 
-  await page.locator('[data-testid="vertical-dots-dropdown-btn"]').waitFor({ state: 'visible' });
-  await page.locator('[data-testid="vertical-dots-dropdown-btn"]').click();
+  await expect(instructorPage.getByText('magice module', { exact: true })).toBeVisible();
 
-  await page.getByText('Delete permanently', { exact: true }).waitFor({ state: 'visible' });
-  await page.getByText('Delete permanently', { exact: true }).click();
+  await instructorPage.locator('[data-testid="vertical-dots-dropdown-btn"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="vertical-dots-dropdown-btn"]').click();
 
-  await page.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
-  await page.locator('[data-testid="modal-primary-button"]').click();
+  await instructorPage.getByText('Delete permanently', { exact: true }).waitFor({ state: 'visible' });
+  await instructorPage.getByText('Delete permanently', { exact: true }).click();
+
+  await instructorPage.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="modal-primary-button"]').click();
 }
 
 async function openFirstCourse(page: Page) {

@@ -5,11 +5,11 @@ A lightweight, straightforward test automation framework supporting both Puppete
 ## Features
 
 - 🔄 **Multiple Browser Automation** - Support for both Puppeteer and Playwright
+- 👥 **Multi-Role Testing** - Support for simultaneous testing with multiple user roles
 - 📊 **Simplified Design** - Direct, functional approach without complex layers
 - 📝 **HTML Reports** - Detailed test execution reports through Jest
 - 🎥 **Video Recording** - Records videos of test execution
 - 📸 **Screenshots** - Automatically captures screenshots during test failures
-- 🏃 **Clean API** - Simple function-based API for testing
 
 ## Prerequisites
 
@@ -34,8 +34,8 @@ puppeteer-workspace/
 │   │   ├── google-simple.test.ts   # Sample Google search test
 │   │   └── todo-simple.test.ts     # Sample TodoMVC test
 ├── reports/               # Test reports and screenshots
-│   └── screenshots/       # Screenshots from test runs
-├── videos/                # Recorded videos
+│   ├── screenshots/       # Screenshots from test runs
+│   └── videos/            # Recorded videos
 ├── jest.config.js         # Jest configuration
 ├── tsconfig.json          # TypeScript configuration
 └── package.json           # Project dependencies and scripts
@@ -43,48 +43,120 @@ puppeteer-workspace/
 
 ## Creating a New Test
 
-Creating a test is straightforward using the recorder-studio extension:
+### Single-Role Test
+
+Creating a test with a single user role:
 
 1. **Create Test File**
    - Navigate to `src/tests` directory
-   - Duplicate `sample.test.ts`
-   - Rename it to reflect your test case (e.g., `login-flow.test.ts`)
-   - Update the test description and configure login credentials:
+   - Create a new test file (e.g., `feature-test.ts`)
+   - Configure login credentials:
    ```typescript
    test('should [your test description]', async () => {
      await runTest(
        '[Your Test Name]', 
        testFn,
        getTestConfig({
-         env: 'your-env',
-         role: 'your-role',
-         email: 'your-email',
-         password: 'your-password'
+         instructorLogin: {
+           env: 'your-env',
+           email: 'instructor@example.com',
+           password: 'your-password'
+         }
        })
      );
    });
+   
+   async function testFn({ instructorPage }: TestContext) {
+     if (!instructorPage) {
+       throw new Error('Instructor page not initialized');
+     }
+     
+     // Your test code here using instructorPage
+   }
    ```
 
-2. **Record Test Steps**
+### Multi-Role Test
+
+Creating a test with multiple user roles (e.g., instructor and student):
+
+```typescript
+test('instructor and student interaction', async () => {
+  await runTest(
+    'Test with multiple roles', 
+    testFn,
+    getTestConfig({
+      instructorLogin: {
+        env: 'your-env',
+        email: 'instructor@example.com',
+        password: 'instructor-password'
+      },
+      studentLogin: {
+        env: 'your-env',
+        email: 'student@example.com',
+        password: 'student-password'
+      }
+    })
+  );
+});
+
+async function testFn(ctx: TestContext) {
+  const { instructorPage, studentPage } = ctx;
+  
+  if (!instructorPage || !studentPage) {
+    throw new Error('Required pages not initialized');
+  }
+  
+  // Instructor creates an assignment
+  await instructorPage.getByText('Create Assignment').click();
+  // ...more instructor actions
+  
+  // Student views and submits the assignment
+  await studentPage.getByText('View Assignments').click();
+  // ...more student actions
+}
+```
+
+### Available User Roles
+
+The framework supports the following roles:
+
+- **Instructor**: For educator/teacher login
+- **Student**: For student login
+- **SuperAdmin**: For admin login
+- **CollegeInstructor**: For college educator login
+
+Each role is automatically set up with the appropriate role type:
+- Student role uses 'student'
+- All other roles use 'educator'
+
+## Recording Test Steps
+
+You can use the recorder-studio extension to create test steps for different user roles:
+
+1. **Record Test Steps**
    - Open the recorder-studio extension
    - Click "Start Recording"
    - Perform your test actions manually in the browser
    - Use assertion buttons for verifying text, colors, or visibility
    - Click "Pause Recording" when done
 
-3. **Generate Test Code**
+2. **Generate Role-Specific Test Code**
    - In the recorder-studio extension:
-     - Select "Playwright" from the dropdown (recommended)
+     - Select "Playwright" from the tool dropdown
+     - Select the appropriate page from the page dropdown:
+       - `instructorPage` for educator/teacher actions
+       - `studentPage` for student actions
+       - `superAdminPage` for admin actions
+       - `collegeInstructorPage` for college instructor actions
      - Click "Generate Test Code"
-   - Replace the empty `testFn` in your test file with the generated code
+   - Integrate the generated code into your testFn for the appropriate role
 
-4. **Run Your Test**
-   ```bash
-   # Run your specific test
-   npx jest path/to/your-test.test.ts
-   ```
+3. **Combining Multi-Role Tests**
+   - Record steps separately for each role
+   - Generate code for each role using the appropriate page selector
+   - Combine the generated code into a single test function, organizing the flow as needed
 
-The recorder-studio extension will automatically generate appropriate selectors and assertions based on your recorded actions. The generated code includes proper waits and error handling.
+You can interleave actions between roles in your test to create complex multi-user workflows and interactions.
 
 ## Running Tests
 
@@ -103,7 +175,7 @@ When building and debugging individual test scripts, use development mode. This 
 npm run test:dev path/to/test-file.test.ts
 
 # Example:
-npm run test:dev src/tests/login-flow.test.ts
+npm run test:dev src/tests/multi-role-example.test.ts
 ```
 
 ### 2. Regression Testing Mode
@@ -119,17 +191,10 @@ For running multiple tests as part of regression testing. This mode runs with:
 npm run test:regression src/tests/folder-name
 
 # Run with specific login credentials
-TEST_EMAIL=user@example.com TEST_PASSWORD=pass123 TEST_ENV=app-dev npm run test:regression src/tests/folder-name
+INSTRUCTOR_EMAIL=teacher@example.com INSTRUCTOR_PASSWORD=pass123 STUDENT_EMAIL=student@example.com STUDENT_PASSWORD=pass123 TEST_ENV=app-dev npm run test:regression src/tests/folder-name
 
 # Example:
 npm run test:regression src/tests/auth
-```
-
-### Additional Commands
-
-```bash
-# Clean up test artifacts (reports and videos)
-npm run clean
 ```
 
 ## Test Reports
@@ -138,27 +203,11 @@ After running the tests, HTML reports will be available in the `reports` directo
 
 ## Video Recordings
 
-Test execution videos are automatically saved to the `videos` directory. Each video is named with the test name and timestamp.
+Test execution videos are automatically saved to the `reports/videos` directory. Each video is named with the test name and timestamp.
 
 ## Screenshots
 
-Screenshots are automatically captured when tests fail and saved in the `reports/screenshots` directory.
-
-## Choosing Between Puppeteer and Playwright
-
-Both tools are excellent choices for browser automation, but they have different strengths:
-
-### Puppeteer
-- Direct integration with Chrome DevTools Protocol
-- Lighter weight if you only need Chrome/Chromium
-- Simpler API for basic automation tasks
-
-### Playwright
-- Multi-browser support (Chromium, Firefox, WebKit)
-- More built-in features for modern web testing
-- Better handling of modern web features and auto-waiting
-
-Choose the tool that best fits your specific needs and browser requirements.
+Screenshots are automatically captured when tests fail and saved in the `reports/screenshots` directory. For multi-role tests, screenshots will be captured for each browser page with the role name included in the filename.
 
 ## Troubleshooting
 
@@ -166,10 +215,13 @@ Choose the tool that best fits your specific needs and browser requirements.
   **Solution**: Increase the timeout value in the test options
 
 - **Issue**: Videos not recording
-  **Solution**: Check if the `videos` directory exists and has proper permissions
+  **Solution**: Check if the `reports/videos` directory exists and has proper permissions
 
 - **Issue**: Element not found errors
   **Solution**: Use appropriate waits or increase timeouts
+
+- **Issue**: Role-specific page is undefined
+  **Solution**: Make sure you've configured the correct login for that role in getTestConfig
 
 ## License
 

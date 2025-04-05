@@ -8,7 +8,11 @@ import * as path from 'path';
 export interface TestContext {
   browser: Browser;
   context: BrowserContext;
-  page: Page;
+  instructorPage?: Page;
+  studentPage?: Page;
+  superAdminPage?: Page;
+  collegeInstructorPage?: Page;
+  [key: string]: any;
   recordingPath?: string;
 }
 
@@ -23,7 +27,25 @@ export interface TestOptions {
   viewportWidth?: number;
   viewportHeight?: number;
   navigationTimeout?: number;
-  setupLogin?: {
+  setupInstructorLogin?: {
+    env: string;
+    role: string;
+    email: string;
+    password: string;
+  };
+  setupStudentLogin?: {
+    env: string;
+    role: string;
+    email: string;
+    password: string;
+  };
+  setupSuperAdminLogin?: {
+    env: string;
+    role: string;
+    email: string;
+    password: string;
+  };
+  setupCollegeInstructorLogin?: {
     env: string;
     role: string;
     email: string;
@@ -36,7 +58,7 @@ export interface TestOptions {
  */
 export async function runTest(
   testName: string,
-  testFn: (page: Page, ctx?: TestContext) => Promise<void>,
+  testFn: (ctx: TestContext) => Promise<void>,
   options: TestOptions = {}
 ): Promise<void> {
   // Default options
@@ -54,8 +76,7 @@ export async function runTest(
   // Create test context
   const ctx: TestContext = { 
     browser: null as any, 
-    context: null as any, 
-    page: null as any 
+    context: null as any
   };
   
   try {
@@ -85,48 +106,107 @@ export async function runTest(
     ctx.context.setDefaultTimeout(opts.timeout);
     ctx.context.setDefaultNavigationTimeout(opts.navigationTimeout);
 
-    // Create a new page
-    ctx.page = await ctx.context.newPage();
+    // Create pages for each role that's configured
+    const setupRoles = [];
 
-    // Add error handling for console errors
-    ctx.page.on('console', (message: { type: () => string; text: () => string }) => {
-      if (message.type() === 'error') {
-        console.log(`Browser console error: ${message.text()}`);
-      }
-    });
-
-    // Run setupLogin if provided
-    if (opts.setupLogin) {
-      console.log('Running setupLogin...');
-      const loginFn = setupLogin(
-        opts.setupLogin.env, 
-        opts.setupLogin.role, 
-        opts.setupLogin.email, 
-        opts.setupLogin.password
-      );
-      await loginFn(ctx.page);
+    // Setup instructor login if provided
+    if (opts.setupInstructorLogin) {
+      ctx.instructorPage = await ctx.context.newPage();
+      setupPageErrorHandling(ctx.instructorPage);
+      setupRoles.push({
+        role: 'instructor',
+        page: ctx.instructorPage,
+        setup: setupLogin(
+          opts.setupInstructorLogin.env,
+          opts.setupInstructorLogin.role,
+          opts.setupInstructorLogin.email,
+          opts.setupInstructorLogin.password
+        )
+      });
     }
 
-    // Run the actual test
-    await testFn(ctx.page, ctx);
+    // Setup student login if provided
+    if (opts.setupStudentLogin) {
+      ctx.studentPage = await ctx.context.newPage();
+      setupPageErrorHandling(ctx.studentPage);
+      setupRoles.push({
+        role: 'student',
+        page: ctx.studentPage,
+        setup: setupLogin(
+          opts.setupStudentLogin.env,
+          opts.setupStudentLogin.role,
+          opts.setupStudentLogin.email,
+          opts.setupStudentLogin.password
+        )
+      });
+    }
+
+    // Setup super admin login if provided
+    if (opts.setupSuperAdminLogin) {
+      ctx.superAdminPage = await ctx.context.newPage();
+      setupPageErrorHandling(ctx.superAdminPage);
+      setupRoles.push({
+        role: 'superAdmin',
+        page: ctx.superAdminPage,
+        setup: setupLogin(
+          opts.setupSuperAdminLogin.env,
+          opts.setupSuperAdminLogin.role,
+          opts.setupSuperAdminLogin.email,
+          opts.setupSuperAdminLogin.password
+        )
+      });
+    }
+
+    // Setup college instructor login if provided
+    if (opts.setupCollegeInstructorLogin) {
+      ctx.collegeInstructorPage = await ctx.context.newPage();
+      setupPageErrorHandling(ctx.collegeInstructorPage);
+      setupRoles.push({
+        role: 'collegeInstructor',
+        page: ctx.collegeInstructorPage,
+        setup: setupLogin(
+          opts.setupCollegeInstructorLogin.env,
+          opts.setupCollegeInstructorLogin.role,
+          opts.setupCollegeInstructorLogin.email,
+          opts.setupCollegeInstructorLogin.password
+        )
+      });
+    }
+
+    // Run login setup for all configured roles
+    for (const roleSetup of setupRoles) {
+      console.log(`Running login setup for ${roleSetup.role}...`);
+      await roleSetup.setup(roleSetup.page);
+    }
+
+    // Run the actual test with the context containing all pages
+    await testFn(ctx);
 
   } catch (error) {
     console.error(`Test '${testName}' failed:`, error);
     
-    // Take screenshot on error
-    if (ctx.page) {
-      const screenshotDir = path.join(process.cwd(), 'reports', 'screenshots');
-      if (!fs.existsSync(screenshotDir)) {
-        fs.mkdirSync(screenshotDir, { recursive: true });
+    // Take screenshot on error for all pages
+    for (const key in ctx) {
+      if (ctx[key] && typeof ctx[key] === 'object' && 'screenshot' in ctx[key]) {
+        const page = ctx[key] as Page;
+        try {
+          const screenshotDir = path.join(process.cwd(), 'reports', 'screenshots');
+          if (!fs.existsSync(screenshotDir)) {
+            fs.mkdirSync(screenshotDir, { recursive: true });
+          }
+          
+          const pageName = key.replace('Page', '');
+          const screenshotPath = path.join(
+            screenshotDir, 
+            `error-${pageName}-${testName.replace(/\s+/g, '-')}-${Date.now()}.png`
+          );
+          
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          console.log(`Error screenshot for ${pageName} saved to: ${screenshotPath}`);
+        } catch (screenshotError) {
+          console.error(`Failed to take screenshot for ${key}:`, screenshotError);
+        }
       }
-
-      const screenshotPath = path.join(
-        screenshotDir, 
-        `error-${testName.replace(/\s+/g, '-')}-${Date.now()}.png`
-      );
-      
-      await ctx.page.screenshot({ path: screenshotPath, fullPage: true });
-      console.log(`Error screenshot saved to: ${screenshotPath}`);
     }
     
     throw error;
@@ -134,6 +214,17 @@ export async function runTest(
     // Teardown phase - clean up resources
     await teardown(ctx);
   }
+}
+
+/**
+ * Setup error handling for a page
+ */
+function setupPageErrorHandling(page: Page): void {
+  page.on('console', (message: { type: () => string; text: () => string }) => {
+    if (message.type() === 'error') {
+      console.log(`Browser console error: ${message.text()}`);
+    }
+  });
 }
 
 export function setupLogin(

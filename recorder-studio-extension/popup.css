@@ -62,6 +62,8 @@ button:disabled {
 #generateBtn {
   background-color: #4CAF50;
   color: white;
+  width: 100%;
+  margin-top: 15px;
 }
 #clearBtn {
   background-color: #666;
@@ -129,31 +131,58 @@ button:disabled {
   padding: 4px 8px;
 }
 .code-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  margin-top: 15px;
+  border-top: 1px solid #ddd;
+  padding-top: 15px;
 }
 .code-controls {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 10px;
 }
-.tool-select {
-  padding: 8px;
-  border: 1px solid #ddd;
+.select-fields {
+  display: flex;
+  gap: 10px;
+  flex: 2;
+}
+.tool-select, .page-select {
+  flex: 1;
+  height: 36px;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 13px;
-  background-color: white;
+  background-color: #f9f9f9;
+  font-size: 14px;
+  color: #333;
   cursor: pointer;
-  min-width: 120px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
 }
-.tool-select:hover {
-  border-color: #2196F3;
-}
-.tool-select:focus {
+.tool-select:focus, .page-select:focus {
+  border-color: #66afe9;
   outline: none;
-  border-color: #2196F3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+  box-shadow: 0 0 0 2px rgba(102, 175, 233, 0.25);
+}
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .code-controls {
+    flex-direction: column;
+  }
+  
+  .select-fields {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .select-container {
+    width: 100%;
+  }
 }
 .status-bar {
   padding: 8px;
@@ -227,4 +256,17 @@ button:disabled {
 
 .assertion-btn:disabled {
   background-color: #90CAF9;
+}
+
+.select-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.select-container label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  margin-bottom: 4px;
 }
