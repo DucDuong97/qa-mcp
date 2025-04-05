@@ -237,11 +237,11 @@ button:disabled {
 
 .assertion-tools {
   display: flex;
+  box-sizing: border-box;
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
   width: 100%;
-  margin-top: 8px;
   padding: 8px;
   background: #f5f5f5;
   border-radius: 4px;
@@ -269,4 +269,79 @@ button:disabled {
   font-weight: 500;
   color: #666;
   margin-bottom: 4px;
+}
+
+.comment-section {
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.action-buttons {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
+#addCommentBtn {
+  background-color: #ff9800;
+  color: white;
+  flex: 1;
+}
+
+#addWaitBtn {
+  background-color: #3f51b5;
+  color: white;
+  flex: 1;
+}
+
+.comment-input-row, .wait-input-row {
+  width: 100%;
+  transition: all 0.3s ease;
+  max-height: 40px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.comment-input-row.hidden, .wait-input-row.hidden {
+  max-height: 0;
+  margin-top: 0;
+}
+
+#commentInput, #waitInput {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.action-item.comment {
+  background-color: #fff8e1;
+  border-left: 3px solid #ff9800;
+  font-style: italic;
+}
+
+.action-item.wait {
+  background-color: #e8eaf6;
+  border-left: 3px solid #3f51b5;
+  font-style: italic;
+}
+
+/* Hide elements */
+.hidden {
+  display: none !important;
+}
+
+/* Make full width */
+.full-width {
+  width: 100% !important;
 }

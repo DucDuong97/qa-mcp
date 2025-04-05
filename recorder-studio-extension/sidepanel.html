@@ -7,7 +7,6 @@
 <body>
   <div class="container">
     <div class="header">
-      <h2>Recorder Studio</h2>
       <div class="controls">
         <button id="recordBtn">Start Recording</button>
         <button id="clearBtn">Clear</button>
@@ -16,6 +15,18 @@
         <button id="assertTextBtn" class="assertion-btn" disabled>Assert Text</button>
         <button id="assertColorBtn" class="assertion-btn" disabled>Assert Color</button>
         <button id="assertVisibleBtn" class="assertion-btn" disabled>Assert Visible</button>
+      </div>
+      <div class="comment-section">
+        <div class="action-buttons">
+          <button id="addCommentBtn">Add Comment</button>
+          <button id="addWaitBtn">Active Wait</button>
+        </div>
+        <div id="commentInputRow" class="comment-input-row hidden">
+          <input type="text" id="commentInput" placeholder="Enter checkpoint comment...">
+        </div>
+        <div id="waitInputRow" class="wait-input-row hidden">
+          <input type="number" id="waitInput" min="1" max="60" placeholder="Wait time in seconds..." value="5">
+        </div>
       </div>
     </div>
 
@@ -33,7 +44,7 @@
     <div class="code-section">
       <div class="code-controls">
         <div class="select-fields">
-          <div class="select-container">
+          <div class="select-container hidden">
             <label for="toolSelect">Tool:</label>
             <select id="toolSelect" class="tool-select">
               <option value="puppeteer">Puppeteer</option>

@@ -26,6 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const assertTextBtn = document.getElementById('assertTextBtn');
   const assertColorBtn = document.getElementById('assertColorBtn');
   const assertVisibleBtn = document.getElementById('assertVisibleBtn');
+  const addCommentBtn = document.getElementById('addCommentBtn');
+  const commentInput = document.getElementById('commentInput');
+  const commentInputRow = document.getElementById('commentInputRow');
+  const addWaitBtn = document.getElementById('addWaitBtn');
+  const waitInput = document.getElementById('waitInput');
+  const waitInputRow = document.getElementById('waitInputRow');
   const actionList = document.getElementById('actionList');
   const codeOutput = document.getElementById('codeOutput');
   const recordingStatus = document.getElementById('recordingStatus');
@@ -111,6 +117,67 @@ document.addEventListener('DOMContentLoaded', () => {
       assertionType: 'visible'
     });
   });
+  
+  // Toggle comment input field when Add Comment button is clicked
+  addCommentBtn.addEventListener('click', () => {
+    // Hide wait input if it's open
+    if (!waitInputRow.classList.contains('hidden')) {
+      waitInputRow.classList.add('hidden');
+      addWaitBtn.textContent = 'Active Wait';
+    }
+    
+    if (commentInputRow.classList.contains('hidden')) {
+      // Show the input field
+      commentInputRow.classList.remove('hidden');
+      commentInput.focus();
+      addCommentBtn.textContent = 'Cancel';
+    } else {
+      // Hide the input field
+      commentInputRow.classList.add('hidden');
+      commentInput.value = '';
+      addCommentBtn.textContent = 'Add Comment';
+    }
+  });
+  
+  // Toggle wait input field when Add Wait button is clicked
+  addWaitBtn.addEventListener('click', () => {
+    // Hide comment input if it's open
+    if (!commentInputRow.classList.contains('hidden')) {
+      commentInputRow.classList.add('hidden');
+      addCommentBtn.textContent = 'Add Comment';
+    }
+    
+    if (waitInputRow.classList.contains('hidden')) {
+      // Show the input field
+      waitInputRow.classList.remove('hidden');
+      waitInput.focus();
+      addWaitBtn.textContent = 'Cancel';
+    } else {
+      // Hide the input field
+      waitInputRow.classList.add('hidden');
+      addWaitBtn.textContent = 'Active Wait';
+    }
+  });
+  
+  // Handle Enter key in comment input
+  commentInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      addCommentAction();
+      // Hide the input row after adding comment
+      commentInputRow.classList.add('hidden');
+      addCommentBtn.textContent = 'Add Comment';
+    }
+  });
+  
+  // Handle Enter key in wait input
+  waitInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      addWaitAction();
+      // Hide the input row after adding wait
+      waitInputRow.classList.add('hidden');
+      addWaitBtn.textContent = 'Active Wait';
+    }
+  });
 
   generateBtn.addEventListener('click', () => {
     console.log('⚙️ Generating test code');
@@ -175,22 +242,61 @@ function updateActionList() {
   console.log('📋 Displaying actions:', recordedActions);
   recordedActions.forEach((action, index) => {
     const $actionItem = document.createElement('div');
-    $actionItem.className = 'action-item';
+    
+    // Set appropriate class based on action type
+    if (action.type === 'comment') {
+      $actionItem.className = 'action-item comment';
+    } else if (action.type === 'wait') {
+      $actionItem.className = 'action-item wait';
+    } else {
+      $actionItem.className = 'action-item';
+    }
+    
     // Make the item draggable
     $actionItem.draggable = true;
     $actionItem.setAttribute('data-index', index);
-    $actionItem.innerHTML = `
-      <div>
-        <span class="drag-handle">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-          </svg>
-        </span>
-        <span class="type">${action.type}</span>
-        <span class="description">${action.description}</span>
-      </div>
-      <span class="delete-action" data-index="${index}">x</span>
-    `;
+    
+    // Different rendering for special action types
+    if (action.type === 'comment') {
+      $actionItem.innerHTML = `
+        <div>
+          <span class="drag-handle">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+            </svg>
+          </span>
+          <span class="type">//</span>
+          <span class="description">${action.description}</span>
+        </div>
+        <span class="delete-action" data-index="${index}">x</span>
+      `;
+    } else if (action.type === 'wait') {
+      $actionItem.innerHTML = `
+        <div>
+          <span class="drag-handle">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+            </svg>
+          </span>
+          <span class="type">Wait</span>
+          <span class="description">${action.description}</span>
+        </div>
+        <span class="delete-action" data-index="${index}">x</span>
+      `;
+    } else {
+      $actionItem.innerHTML = `
+        <div>
+          <span class="drag-handle">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+            </svg>
+          </span>
+          <span class="type">${action.type}</span>
+          <span class="description">${action.description}</span>
+        </div>
+        <span class="delete-action" data-index="${index}">x</span>
+      `;
+    }
     $actionList.appendChild($actionItem);
 
     // Add drag event listeners
@@ -253,6 +359,50 @@ function updateActionList() {
   });
 }
 
+// Function to add a comment action
+function addCommentAction() {
+  const commentInput = document.getElementById('commentInput');
+  const commentText = commentInput.value.trim();
+  
+  if (commentText) {
+    console.log('📝 Adding comment checkpoint:', commentText);
+    
+    const commentAction = {
+      type: 'comment',
+      description: commentText,
+      timestamp: new Date().toISOString()
+    };
+    
+    recordedActions.push(commentAction);
+    chrome.storage.local.set({ recordedActions });
+    updateActionList();
+    
+    // Clear the input after adding
+    commentInput.value = '';
+  }
+}
+
+// Function to add a wait action
+function addWaitAction() {
+  const waitInput = document.getElementById('waitInput');
+  const waitTime = parseInt(waitInput.value);
+  
+  if (waitTime > 0) {
+    console.log('⏱️ Adding wait action:', waitTime, 'seconds');
+    
+    const waitAction = {
+      type: 'wait',
+      duration: waitTime,
+      description: `${waitTime} second${waitTime === 1 ? '' : 's'}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    recordedActions.push(waitAction);
+    chrome.storage.local.set({ recordedActions });
+    updateActionList();
+  }
+}
+
 function generatePuppeteerCode(pageName = 'page') {
   console.log(`⚙️ Starting Puppeteer code generation for ${pageName}`);
   
@@ -293,11 +443,16 @@ function generatePuppeteerCode(pageName = 'page') {
         code += `    visible: true\n`;
         code += `    });\n\n`;
         break;
+      case 'comment':
+        code += `    // ${action.description}\n`;
+        break;
+      case 'wait':
+        code += `    // Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
+        code += `    await new Promise(resolve => setTimeout(resolve, ${action.duration * 1000}));\n\n`;
+        break;
     }
   });
 
-  code += "";
-  
   console.log('✅ Code generation complete');
   return code;
 }
@@ -305,10 +460,7 @@ function generatePuppeteerCode(pageName = 'page') {
 function generatePlaywrightCode(pageName = 'page') {
   console.log(`⚙️ Starting Playwright code generation for ${pageName}`);
   
-  let code = `async function testFn({ ${pageName} }: TestContext) {\n`;
-  code += `  if (!${pageName}) {\n`;
-  code += `    throw new Error('${pageName} not initialized');\n`;
-  code += `  }\n\n`;
+  let code = "";
   
   recordedActions.forEach((action, index) => {
     console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
@@ -336,10 +488,15 @@ function generatePlaywrightCode(pageName = 'page') {
       case 'visible':
         code += `  await expect(${pageName}.locator('${action.selector}')).toBeVisible();\n\n`;
         break;
+      case 'comment':
+        code += `  // ${action.description}\n`;
+        break;
+      case 'wait':
+        code += `  // Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
+        code += `  await ${pageName}.waitForTimeout(${action.duration * 1000});\n\n`;
+        break;
     }
   });
-
-  code += '}';
   
   console.log('✅ Code generation complete');
   return code;
