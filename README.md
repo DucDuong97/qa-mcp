@@ -131,6 +131,24 @@ Each role is automatically set up with the appropriate role type:
 
 ## Recording Test Steps
 
+### Installing the Recorder Studio Extension
+
+Since the Recorder Studio extension is not available on the Chrome Web Store, you'll need to install it manually:
+
+1. **Install in Chrome**
+   - Open Chrome and navigate to `chrome://extensions/`
+   - Enable "Developer mode" using the toggle in the top-right corner
+   - Click "Load unpacked" button
+   - Select the `recorder-studio-extension` directory from this project
+   - The Recorder Studio extension should now appear in your extensions list
+   - Click the Extensions icon in Chrome toolbar and pin the Recorder Studio for easy access
+
+2. **Usage**
+   - Click the Recorder Studio icon in your Chrome toolbar to open the side panel
+   - The extension is now ready for recording test steps
+
+### Using the Recorder Studio
+
 You can use the recorder-studio extension to create test steps for different user roles:
 
 1. **Record Test Steps**
