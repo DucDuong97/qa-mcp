@@ -6,10 +6,9 @@ A lightweight, straightforward test automation framework supporting both Puppete
 
 - 🔄 **Multiple Browser Automation** - Support for both Puppeteer and Playwright
 - 👥 **Multi-Role Testing** - Support for simultaneous testing with multiple user roles
-- 📊 **Simplified Design** - Direct, functional approach without complex layers
-- 📝 **HTML Reports** - Detailed test execution reports through Jest
-- 🎥 **Video Recording** - Records videos of test execution
-- 📸 **Screenshots** - Automatically captures screenshots during test failures
+- 🧩 **Component-Based** - Reusable UI components with built-in teardown
+- 🧪 **Structured Test Setup** - Separation of preparation and test execution
+- 📝 **HTML Reports, Video Recording, Screenshots** - Detailed execution reports, screenshots and videos
 
 ## Prerequisites
 
@@ -28,10 +27,13 @@ npm install
 ```
 puppeteer-workspace/
 ├── src/
-│   ├── helpers/           # Utility functions and test middleware
-│   │   └── testUtils.ts   # Core test utilities and middleware pattern
-│   ├── tests/             # Test files
-│   │   ├── google-simple.test.ts   # Sample Google search test
+│   ├── components/         # Reusable UI components
+│   │   └── playwright.ts   # Component functions for common UI interactions
+│   ├── helpers/            # Utility functions and test middleware
+│   │   └── playwrightUtils.ts # Core test utilities and middleware pattern
+│   ├── tests/              # Test files
+│   │   ├── bif/            # Business functionality tests
+│   │   │   └── educator-module.test.ts # Module management test
 │   │   └── todo-simple.test.ts     # Sample TodoMVC test
 ├── reports/               # Test reports and screenshots
 │   ├── screenshots/       # Screenshots from test runs
@@ -41,7 +43,67 @@ puppeteer-workspace/
 └── package.json           # Project dependencies and scripts
 ```
 
+## Component-Based Architecture
+
+The framework now features a component-based architecture that:
+
+1. **Separates Concerns** - Preparation, test execution, and teardown are clearly separated
+2. **Promotes Reusability** - Common UI interactions are encapsulated in reusable components
+3. **Ensures Clean Teardown** - Each component returns its own teardown function
+4. **Simplifies Test Structure** - Clear distinction between setup and actual testing
+
+### Component Functions
+
+Components are reusable functions that:
+- Perform a specific UI interaction
+- Return a teardown function that cleans up the created resources
+- Accept a context object with page references
+- Accept configuration options
+
+Example component:
+
+```typescript
+// Creating a course component with teardown
+export async function createCourse(
+  { instructorPage }: TestContext,
+) {
+  // Implementation that creates a course
+  
+  // Return teardown function that cleans up the course
+  return async () => {
+    // Logic to delete the course
+  };
+}
+```
+
 ## Creating a New Test
+
+### Test Structure with prepareFn and testFn
+
+Tests now follow a clear structure with separate preparation and test functions:
+
+```typescript
+test('should create and delete a module', async () => {
+  await runTest(
+    'Create and delete module', 
+    prepareFn,    // Sets up test environment
+    testFn,       // Performs the actual test
+    getTestConfig({
+      ...
+    })
+  );
+});
+
+// Setup function that prepares the environment
+async function prepareFn(ctx: TestContext) {
+  ...
+}
+
+// Test function that performs the actual test
+async function testFn(ctx: TestContext) {
+  ...
+}
+```
 
 ### Single-Role Test
 
@@ -55,6 +117,7 @@ Creating a test with a single user role:
    test('should [your test description]', async () => {
      await runTest(
        '[Your Test Name]', 
+       prepareFn,
        testFn,
        getTestConfig({
          instructorLogin: {
@@ -66,7 +129,16 @@ Creating a test with a single user role:
      );
    });
    
-   async function testFn({ instructorPage }: TestContext) {
+   async function prepareFn(ctx: TestContext) {
+     // Set up the test environment
+     const cleanup = await createCourse(ctx, {
+       courseName: 'Test Course'
+     });
+     ctx.teardownFns.push(cleanup);
+   }
+   
+   async function testFn(ctx: TestContext) {
+     const { instructorPage } = ctx;
      if (!instructorPage) {
        throw new Error('Instructor page not initialized');
      }
@@ -83,6 +155,7 @@ Creating a test with multiple user roles (e.g., instructor and student):
 test('instructor and student interaction', async () => {
   await runTest(
     'Test with multiple roles', 
+    prepareFn,
     testFn,
     getTestConfig({
       instructorLogin: {
@@ -98,6 +171,18 @@ test('instructor and student interaction', async () => {
     })
   );
 });
+
+async function prepareFn(ctx: TestContext) {
+  const { instructorPage } = ctx;
+  
+  // Set up course for test
+  const cleanupCourse = await createCourse(ctx, {
+    courseName: 'Shared Course'
+  });
+  
+  // Store teardown function
+  ctx.teardownFns.push(cleanupCourse);
+}
 
 async function testFn(ctx: TestContext) {
   const { instructorPage, studentPage } = ctx;
@@ -128,6 +213,70 @@ The framework supports the following roles:
 Each role is automatically set up with the appropriate role type:
 - Student role uses 'student'
 - All other roles use 'educator'
+
+## Teardown Mechanism
+
+The framework now includes an automatic teardown mechanism:
+
+1. **Component-Level Teardown** - Each component function returns a teardown function
+2. **Collection in Context** - Teardown functions are collected in the `ctx.teardownFns` array
+3. **Reverse Order Execution** - During test cleanup, teardown functions are executed in reverse order (LIFO)
+4. **Automatic Error Handling** - Teardown executes even if the test fails, with proper error handling
+
+Example of registering a teardown function:
+
+```typescript
+// In a component function
+return async () => {
+  // Cleanup logic here
+  await page.click('Delete button');
+  await page.click('Confirm');
+};
+
+// In a test function
+const cleanupResource = await createResource(ctx, options);
+ctx.teardownFns.push(cleanupResource);
+```
+
+## Creating Reusable Components
+
+To create a new component function:
+
+1. Add it to the appropriate file in `src/components/`
+2. Follow the pattern of accepting context and options
+3. Implement the UI interaction
+4. Return a teardown function that cleans up any created resources
+
+Example component template:
+
+```typescript
+export async function createSomething(
+  ctx: TestContext,
+  {
+    optionOne = 'default value',
+    optionTwo = 'default value'
+  }: {
+    optionOne?: string,
+    optionTwo?: string
+  }
+) {
+  const { instructorPage } = ctx;
+  if (!instructorPage) {
+    throw new Error('Instructor page not initialized');
+  }
+  
+  // Implementation code here
+  await instructorPage.click('Create button');
+  await instructorPage.fill('Name field', optionOne);
+  
+  // Return teardown function
+  return async () => {
+    // Cleanup code here
+    await instructorPage.click('Delete button');
+    await instructorPage.click('Confirm');
+  };
+}
+```
 
 ## Recording Test Steps
 
@@ -240,6 +389,9 @@ Screenshots are automatically captured when tests fail and saved in the `reports
 
 - **Issue**: Role-specific page is undefined
   **Solution**: Make sure you've configured the correct login for that role in getTestConfig
+
+- **Issue**: Teardown functions not executing
+  **Solution**: Ensure you're properly adding the teardown functions to ctx.teardownFns
 
 ## License
 

@@ -14,6 +14,7 @@ export interface TestContext {
   collegeInstructorPage?: Page;
   [key: string]: any;
   recordingPath?: string;
+  teardownFns: (() => Promise<void>)[];
 }
 
 /**
@@ -58,8 +59,9 @@ export interface TestOptions {
  */
 export async function runTest(
   testName: string,
+  prepareFn: (ctx: TestContext) => Promise<void>,
   testFn: (ctx: TestContext) => Promise<void>,
-  options: TestOptions = {}
+  options: TestOptions = {},
 ): Promise<void> {
   // Default options
   const opts = {
@@ -76,7 +78,8 @@ export async function runTest(
   // Create test context
   const ctx: TestContext = { 
     browser: null as any, 
-    context: null as any
+    context: null as any,
+    teardownFns: []
   };
   
   try {
@@ -177,6 +180,13 @@ export async function runTest(
     for (const roleSetup of setupRoles) {
       console.log(`Running login setup for ${roleSetup.role}...`);
       await roleSetup.setup(roleSetup.page);
+    }
+
+    // Run prepareFn if provided to set up test context
+    if (prepareFn) {
+      console.log(`Running preparation function for test '${testName}'...`);
+      await prepareFn(ctx);
+      console.log(`Preparation completed for test '${testName}'`);
     }
 
     // Run the actual test with the context containing all pages
@@ -308,6 +318,21 @@ export function setupLogin(
  */
 async function teardown(ctx: TestContext): Promise<void> {
   try {
+    // Execute collected teardown functions in reverse order
+    if (ctx.teardownFns && Array.isArray(ctx.teardownFns)) {
+      console.log(`Executing ${ctx.teardownFns.length} teardown functions...`);
+      
+      // Execute in reverse order (last-in-first-out)
+      for (let i = ctx.teardownFns.length - 1; i >= 0; i--) {
+        try {
+          await ctx.teardownFns[i]();
+          console.log(`Successfully executed teardown function ${i + 1}/${ctx.teardownFns.length}`);
+        } catch (teardownError) {
+          console.error(`Error executing teardown function ${i + 1}/${ctx.teardownFns.length}:`, teardownError);
+        }
+      }
+    }
+    
     // Context closing will automatically close all pages
     if (ctx.context) {
       await ctx.context.close();
@@ -319,22 +344,5 @@ async function teardown(ctx: TestContext): Promise<void> {
     }
   } catch (error) {
     console.error('Error during test teardown:', error);
-  }
-}
-
-
-export async function escapeUserGuide(page: Page) {
-  let okGotIt = page.getByText('OK, got it', { exact: true });
-  while (true) {
-    try {
-      await okGotIt.waitFor({ state: 'visible', timeout: 3000 });
-      await okGotIt.click();
-      // Re-query the button after clicking as the previous reference might be stale
-      okGotIt = page.getByText('OK, got it', { exact: true });
-    } catch (error) {
-      // No more buttons found, break the loop
-      console.log('No more OK, got it buttons found');
-      break;
-    }
   }
 }
