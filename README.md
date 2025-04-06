@@ -296,6 +296,13 @@ Since the Recorder Studio extension is not available on the Chrome Web Store, yo
    - Click the Recorder Studio icon in your Chrome toolbar to open the side panel
    - The extension is now ready for recording test steps
 
+3. **Notes**
+   - If some changes are made to the extension or it's not working properly, you can reload it:
+     - Navigate to `chrome://extensions/`
+     - Find the Recorder Studio extension
+     - Click the refresh/reload icon or toggle the extension off and on
+     - Restart Chrome if the reload doesn't resolve issues
+
 ### Using the Recorder Studio
 
 You can use the recorder-studio extension to create test steps for different user roles:
