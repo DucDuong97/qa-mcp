@@ -1,4 +1,4 @@
-import { Browser, BrowserContext, Page, chromium } from '@playwright/test';
+import { Browser, BrowserContext, Page, chromium, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -6,15 +6,14 @@ import * as path from 'path';
  * Simple test context that holds test resources
  */
 export interface TestContext {
-  browser: Browser;
-  context: BrowserContext;
+  browsers: {[key: string]: Browser};
+  contexts: {[key: string]: BrowserContext};
   instructorPage?: Page;
   studentPage?: Page;
   superAdminPage?: Page;
   collegeInstructorPage?: Page;
-  [key: string]: any;
-  recordingPath?: string;
   teardownFns: (() => Promise<void>)[];
+  [key: string]: any;
 }
 
 /**
@@ -77,44 +76,44 @@ export async function runTest(
 
   // Create test context
   const ctx: TestContext = { 
-    browser: null as any, 
-    context: null as any,
+    browsers: {}, 
+    contexts: {},
     teardownFns: []
   };
   
   try {
-    // Setup phase - launch browser
-    ctx.browser = await chromium.launch({
-      headless: opts.headless,
-      slowMo: opts.slowMo,
-      args: [
-        '--disable-gpu',
-        '--disable-web-security',
-      ]
-    });
-
-    // Create a new context with viewport and recording settings
-    ctx.context = await ctx.browser.newContext({
-      viewport: {
-        width: opts.viewportWidth,
-        height: opts.viewportHeight
-      },
-      recordVideo: opts.recordVideo ? {
-        dir: path.join(process.cwd(), 'reports', 'videos'),
-        size: { width: 1280, height: 720 }
-      } : undefined,
-    });
-
-    // Set timeouts and add artificial delay between actions
-    ctx.context.setDefaultTimeout(opts.timeout);
-    ctx.context.setDefaultNavigationTimeout(opts.navigationTimeout);
-
     // Create pages for each role that's configured
     const setupRoles = [];
 
     // Setup instructor login if provided
     if (opts.setupInstructorLogin) {
-      ctx.instructorPage = await ctx.context.newPage();
+      const browser = await chromium.launch({
+        headless: opts.headless,
+        slowMo: opts.slowMo,
+        args: [
+          '--disable-gpu',
+          '--disable-web-security',
+        ]
+      });
+      
+      ctx.browsers['instructor'] = browser;
+      
+      const context = await browser.newContext({
+        viewport: {
+          width: opts.viewportWidth,
+          height: opts.viewportHeight
+        },
+        recordVideo: opts.recordVideo ? {
+          dir: path.join(process.cwd(), 'reports', 'videos'),
+          size: { width: 1280, height: 720 }
+        } : undefined,
+      });
+      
+      context.setDefaultTimeout(opts.timeout);
+      context.setDefaultNavigationTimeout(opts.navigationTimeout);
+      ctx.contexts['instructor'] = context;
+      
+      ctx.instructorPage = await context.newPage();
       setupPageErrorHandling(ctx.instructorPage);
       setupRoles.push({
         role: 'instructor',
@@ -130,7 +129,33 @@ export async function runTest(
 
     // Setup student login if provided
     if (opts.setupStudentLogin) {
-      ctx.studentPage = await ctx.context.newPage();
+      const browser = await chromium.launch({
+        headless: opts.headless,
+        slowMo: opts.slowMo,
+        args: [
+          '--disable-gpu',
+          '--disable-web-security',
+        ]
+      });
+      
+      ctx.browsers['student'] = browser;
+      
+      const context = await browser.newContext({
+        viewport: {
+          width: opts.viewportWidth,
+          height: opts.viewportHeight
+        },
+        recordVideo: opts.recordVideo ? {
+          dir: path.join(process.cwd(), 'reports', 'videos'),
+          size: { width: 1280, height: 720 }
+        } : undefined,
+      });
+      
+      context.setDefaultTimeout(opts.timeout);
+      context.setDefaultNavigationTimeout(opts.navigationTimeout);
+      ctx.contexts['student'] = context;
+      
+      ctx.studentPage = await context.newPage();
       setupPageErrorHandling(ctx.studentPage);
       setupRoles.push({
         role: 'student',
@@ -146,7 +171,33 @@ export async function runTest(
 
     // Setup super admin login if provided
     if (opts.setupSuperAdminLogin) {
-      ctx.superAdminPage = await ctx.context.newPage();
+      const browser = await chromium.launch({
+        headless: opts.headless,
+        slowMo: opts.slowMo,
+        args: [
+          '--disable-gpu',
+          '--disable-web-security',
+        ]
+      });
+      
+      ctx.browsers['superAdmin'] = browser;
+      
+      const context = await browser.newContext({
+        viewport: {
+          width: opts.viewportWidth,
+          height: opts.viewportHeight
+        },
+        recordVideo: opts.recordVideo ? {
+          dir: path.join(process.cwd(), 'reports', 'videos'),
+          size: { width: 1280, height: 720 }
+        } : undefined,
+      });
+      
+      context.setDefaultTimeout(opts.timeout);
+      context.setDefaultNavigationTimeout(opts.navigationTimeout);
+      ctx.contexts['superAdmin'] = context;
+      
+      ctx.superAdminPage = await context.newPage();
       setupPageErrorHandling(ctx.superAdminPage);
       setupRoles.push({
         role: 'superAdmin',
@@ -162,7 +213,33 @@ export async function runTest(
 
     // Setup college instructor login if provided
     if (opts.setupCollegeInstructorLogin) {
-      ctx.collegeInstructorPage = await ctx.context.newPage();
+      const browser = await chromium.launch({
+        headless: opts.headless,
+        slowMo: opts.slowMo,
+        args: [
+          '--disable-gpu',
+          '--disable-web-security',
+        ]
+      });
+      
+      ctx.browsers['collegeInstructor'] = browser;
+      
+      const context = await browser.newContext({
+        viewport: {
+          width: opts.viewportWidth,
+          height: opts.viewportHeight
+        },
+        recordVideo: opts.recordVideo ? {
+          dir: path.join(process.cwd(), 'reports', 'videos'),
+          size: { width: 1280, height: 720 }
+        } : undefined,
+      });
+      
+      context.setDefaultTimeout(opts.timeout);
+      context.setDefaultNavigationTimeout(opts.navigationTimeout);
+      ctx.contexts['collegeInstructor'] = context;
+      
+      ctx.collegeInstructorPage = await context.newPage();
       setupPageErrorHandling(ctx.collegeInstructorPage);
       setupRoles.push({
         role: 'collegeInstructor',
@@ -255,11 +332,11 @@ export function setupLogin(
     await Promise.all([
       page.waitForLoadState('networkidle'),
       page.waitForLoadState('domcontentloaded'),
-      page.waitForTimeout(3000)
+      page.waitForTimeout(2000)
     ]);
     
     console.log('🔍 Checking for login form...');
-    const emailInput = page.getByPlaceholder('Enter your institutional email', { exact: true });
+    const emailInput = page.getByPlaceholder(role === 'educator' ? 'Enter your institutional email' : 'Enter your email', { exact: true });
     const exists = await emailInput.isVisible().catch((error) => {
       console.error('❌ Error checking for email input:', error);
       return false;
@@ -281,18 +358,12 @@ export function setupLogin(
         console.log('🖱️ Clicking login button...');
         await Promise.all([
           page.waitForLoadState('networkidle'),
-          page.getByText('Log in as an Instructor', { exact: true }).click()
+          page.getByText(role === 'educator' ? 'Log in as an Instructor' : 'Log in as a Student', { exact: true }).click()
         ]);
         
         // Verify successful login
-        const dashboardContent = await page.getByText('Create new course', { exact: true }).isVisible()
-          .catch(() => false);
+        await expect(page.getByText('My Courses', { exact: true })).toBeVisible();
         
-        if (dashboardContent) {
-          console.log('✅ Login successful - dashboard loaded');
-        } else {
-          console.warn('⚠️ Login might have failed - cannot find dashboard content');
-        }
       } catch (error) {
         console.error('❌ Error during login process:', error);
         throw error;
@@ -334,13 +405,19 @@ async function teardown(ctx: TestContext): Promise<void> {
     }
     
     // Context closing will automatically close all pages
-    if (ctx.context) {
-      await ctx.context.close();
+    for (const key in ctx.contexts) {
+      const context = ctx.contexts[key];
+      if (context) {
+        await context.close();
+      }
     }
     
-    // Close browser
-    if (ctx.browser) {
-      await ctx.browser.close();
+    // Close browsers
+    for (const key in ctx.browsers) {
+      const browser = ctx.browsers[key];
+      if (browser) {
+        await browser.close();
+      }
     }
   } catch (error) {
     console.error('Error during test teardown:', error);

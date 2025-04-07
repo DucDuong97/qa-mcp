@@ -2,7 +2,7 @@ let isRecording = false;
 let isAssertionMode = false;
 let currentAssertionType = null;
 
-const TEXT_CONTAINERS = ['BUTTON', 'A', 'DIV', 'SPAN', 'H1', 'H2', 'H3', 'P'];
+const TEXT_CONTAINERS = ['BUTTON', 'A', 'DIV', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'P'];
 
 console.log('🎯 Content Script Initialized');
 
@@ -72,8 +72,28 @@ function getSelector(element, level = 0) {
   if (TEXT_CONTAINERS.includes(element.tagName)) {
     const directText = getDirectTextContent(element);
     if (directText) {
-      const selector = `text/${directText}`;
-      console.log('✅ Found direct text content selector:', selector);
+      // Find closest ancestor with data-testid (including self)
+      let currentElement = element;
+      let testIdAncestor = null;
+      while (currentElement && !testIdAncestor) {
+        if (currentElement.getAttribute('data-testid')) {
+          testIdAncestor = currentElement;
+        } else {
+          currentElement = currentElement.parentElement;
+        }
+      }
+      
+      let selector;
+      if (testIdAncestor) {
+        const testId = testIdAncestor.getAttribute('data-testid');
+        const tagName = element.tagName.toLowerCase();
+        selector = `[data-testid="${testId}"] ${tagName}:has-text("${directText}")`;
+        console.log('✅ Found text content with data-testid and tag context:', selector);
+      } else {
+        const tagName = element.tagName.toLowerCase();
+        selector = `${tagName}:has-text("${directText}")`;
+        console.log('✅ Found direct text content selector with tag:', selector);
+      }
       return selector;
     }
   }
@@ -94,11 +114,11 @@ function getSelector(element, level = 0) {
     if (parent) {
       const parentSelector = getSelector(parent, 1);
 
+      if (parentSelector) {
       if (TEXT_CONTAINERS.includes(parent.tagName)) {
         return parentSelector;
       }
       
-      if (parentSelector) {
         let selector = `${parentSelector} > ${element.tagName.toLowerCase()}`;
         let index = Array.from(parent.children).indexOf(element);
         
@@ -106,6 +126,8 @@ function getSelector(element, level = 0) {
           selector += `:nth-child(${index + 1})`;
         }
         console.log('✅ Found parent context selector:', selector);
+
+        if (selector){
         return selector;
       }
     }

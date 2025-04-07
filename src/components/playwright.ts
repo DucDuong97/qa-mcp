@@ -1,4 +1,4 @@
-import { Page, expect } from "@playwright/test";
+import { Page, expect, Locator } from "@playwright/test";
 import { TestContext } from "../helpers/playwrightUtils.ts";
 
 export async function escapeUserGuide(page: Page) {
@@ -19,9 +19,10 @@ export async function escapeUserGuide(page: Page) {
 
 
 export async function createCourse(
-  { instructorPage }: TestContext, 
+  instructorPage: Page, 
+  context: TestContext,
   {
-    courseName = 'Magic course',
+    courseName = 'Test course',
     subject = 'Calculus',
     startDay = '12',
     endDay = '16',
@@ -35,9 +36,6 @@ export async function createCourse(
   },
 ) {
   console.log('📝 Starting course creation flow...');
-  if (!instructorPage) {
-    throw new Error('Instructor page not initialized');
-  }
 
   // Find and click "Create new course" button
   console.log('🔍 Looking for "Create new course" button...');
@@ -138,38 +136,47 @@ export async function createCourse(
   await skipButton.click();
   console.log('✅ Skipped textbook setup');
 
+  await escapeUserGuide(instructorPage);
+
   // save URL
-  const url = instructorPage.url();
+  context.courseUrl = instructorPage.url();
 
   return async () => {
-    await instructorPage.goto(url);
+    await instructorPage.goto(context.courseUrl);
 
-    await instructorPage.waitForSelector('text/Settings');
-    await instructorPage.click('text/Settings');
+    try {
+      await instructorPage.locator('span:has-text("Unpublish course")').first().waitFor({ state: 'visible' });
+      await instructorPage.locator('span:has-text("Unpublish course")').first().click();
+    
+      await instructorPage.locator('[data-testid="modal-primary-button"]').first().waitFor({ state: 'visible' });
+      await instructorPage.locator('[data-testid="modal-primary-button"]').first().click();
+    } catch (error) {
+      console.log('🔍 No unpublish course button found');
+    }
 
-    await instructorPage.waitForSelector('text/Delete course');
-    await instructorPage.click('text/Delete course');
+    await instructorPage.getByText('Settings', { exact: true }).first().waitFor({ state: 'visible' });
+    await instructorPage.getByText('Settings', { exact: true }).first().click();
 
-    await instructorPage.waitForSelector('input[placeholder="YES"]');
-    await instructorPage.click('input[placeholder="YES"]');
-
-    await instructorPage.waitForSelector('input[placeholder="YES"]');
-    await instructorPage.type('input[placeholder="YES"]', 'YES');
-
-    await instructorPage.waitForSelector('[data-testid="modal-primary-button"]');
-    await instructorPage.click('[data-testid="modal-primary-button"]');
+    await instructorPage.locator('span:has-text("Delete course")').first().waitFor({ state: 'visible' });
+    await instructorPage.locator('span:has-text("Delete course")').first().click();
+  
+    await instructorPage.locator('input[placeholder="YES"]').first().waitFor({ state: 'visible' });
+    await instructorPage.locator('input[placeholder="YES"]').first().click();
+  
+    await instructorPage.locator('input[placeholder="YES"]').first().waitFor({ state: 'visible' });
+    await instructorPage.locator('input[placeholder="YES"]').first().fill('YES');
+  
+    await instructorPage.locator('[data-testid="modal-primary-button"]').first().waitFor({ state: 'visible' });
+    await instructorPage.locator('[data-testid="modal-primary-button"]').first().click();  
   }
 }
 
 
 export async function createModule(
-  { instructorPage }: TestContext, 
+  instructorPage: Page, 
+  context: TestContext,
   { moduleName = 'Magic module', }: { moduleName?: string, },
 ) {
-  if (!instructorPage) {
-    throw new Error('Instructor page not initialized');
-  }
-
   await instructorPage.getByText('Add new module', { exact: true }).first().waitFor({ state: 'visible' });
   await instructorPage.getByText('Add new module', { exact: true }).first().click();
 
@@ -202,4 +209,194 @@ export async function createModule(
     await instructorPage.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
     await instructorPage.locator('[data-testid="modal-primary-button"]').click();
   }
+}
+
+
+export async function addTextbook(instructorPage: Page, context: TestContext, { moduleBlock }: { moduleBlock: Locator }) {
+  await moduleBlock.locator('span:has-text("Add new item for this module")').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('span:has-text("Add new item for this module")').first().click();
+
+  const container = moduleBlock.locator('[data-testid="itemType-selector"]');
+  await container.waitFor({ state: 'visible' });
+  await container.locator('div:has-text("Select item type")').first().click();
+
+  await instructorPage.getByText("Textbook", {exact: true}).first().waitFor({ state: 'visible' });
+  await instructorPage.getByText("Textbook", {exact: true}).first().click();
+  console.log('✅ Selected Textbook option');
+
+  // Active wait for 3 seconds
+  await instructorPage.waitForTimeout(3000);
+
+  const container_book_selector = moduleBlock.locator('[data-testid="book-selector"]');
+  await container_book_selector.waitFor({ state: 'visible' });
+  await container_book_selector.locator('div:has-text("Select a textbook")').first().click();
+
+  await instructorPage.getByText("Calculus Volume 1", {exact: true}).first().waitFor({ state: 'visible' });
+  await instructorPage.getByText("Calculus Volume 1", {exact: true}).first().click();
+
+  const container_selection_item = moduleBlock.locator('[data-testid="selection-item"] p:has-text("Chapter 1. Functions and Graphs")');
+  await container_selection_item.waitFor({ state: 'visible' });
+  await container_selection_item.click();
+
+  await moduleBlock.locator('span:has-text("Add item")').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('span:has-text("Add item")').first().click();
+}
+
+
+export async function addAssignment(instructorPage: Page, context: TestContext, { moduleBlock }: { moduleBlock: Locator }) {
+  console.log('🚀 Starting assignment creation flow...');
+  
+  console.log('📝 Finding and clicking "Add new item for this module"...');
+  await moduleBlock.locator('span:has-text("Add new item for this module")').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('span:has-text("Add new item for this module")').first().click();
+  console.log('✅ Clicked add new item button');
+
+  console.log('📝 Selecting item type...');  
+  const container = moduleBlock.locator('[data-testid="itemType-selector"]');
+  await container.waitFor({ state: 'visible' });
+  await container.locator('div:has-text("Select item type")').first().click();
+
+  console.log('✅ Clicked item type selector');
+
+  console.log('📝 Selecting Assignment option...');
+  await instructorPage.getByText("Assignment", {exact: true}).first().waitFor({ state: 'visible' });
+  await instructorPage.getByText("Assignment", {exact: true}).first().click();
+  console.log('✅ Selected Assignment option');
+
+  console.log('📝 Entering assignment title...');
+  await moduleBlock.locator('input[placeholder="Enter assignment title"]').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('input[placeholder="Enter assignment title"]').first().click();
+
+  await moduleBlock.locator('input[placeholder="Enter assignment title"]').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('input[placeholder="Enter assignment title"]').first().fill('Test Assignment');
+  console.log('✅ Filled assignment title');
+
+  console.log('📝 Clicking Add item button...');
+  await moduleBlock.locator('span:has-text("Add item")').first().waitFor({ state: 'visible' });
+  await moduleBlock.locator('span:has-text("Add item")').first().click();
+  console.log('✅ Clicked Add item button');
+
+  console.log('📝 Finding and clicking created Test Assignment...');
+  await moduleBlock.locator('div:has-text("Test Assignment")').first().click();
+  console.log('✅ Clicked on Test Assignment');
+
+  console.log('📝 Navigating to next step...');
+  await instructorPage.locator('[data-testid="next-step-button"] span:has-text("Next")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="next-step-button"] span:has-text("Next")').first().click();
+  console.log('✅ Clicked next step button');
+
+  const container_learning_objective_section_tabs = instructorPage.locator('[data-testid="learning-objective-section-tabs"]');
+  await container_learning_objective_section_tabs.waitFor({ state: 'visible' });
+  await container_learning_objective_section_tabs.locator('div:has-text("Additional learning objectives")').first().click();
+
+  await instructorPage.locator('[data-testid="subject-item-title"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="subject-item-title"]').first().click();
+
+  await instructorPage.locator('[data-testid="unit-item-84"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="unit-item-84"]').first().click();
+
+  const container_selection_item = instructorPage.locator('[data-testid="selection-item"] p:has-text("Add and Subtract Integers")');
+  await container_selection_item.waitFor({ state: 'visible' });
+  await container_selection_item.click();
+
+  await instructorPage.locator('[data-testid="selection-item"] p:has-text("Multiply and Divide Integers")').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="selection-item"] p:has-text("Multiply and Divide Integers")').click();
+
+  console.log('📝 Proceeding to next step...');
+  await instructorPage.locator('[data-testid="next-step-button"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="next-step-button"]').first().click();
+  console.log('✅ Clicked next step button');
+
+  console.log('📝 Toggling question vary...');
+  await instructorPage.locator('[data-testid="question-vary-toggle"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="question-vary-toggle"]').first().click();
+  console.log('✅ Toggled question vary');
+
+  console.log('📝 Generating question...');
+  await instructorPage.locator('[data-testid="generate-question"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="generate-question"]').first().click();
+  console.log('✅ Clicked generate question button');
+
+  console.log('⏱️ Waiting for question generation (5 seconds)...');
+  // Active wait for 5 seconds
+  await instructorPage.waitForTimeout(5000);
+  console.log('✅ Waited for question generation');
+
+  console.log('📝 Moving to next step...');
+  const container_next_step_button = instructorPage.locator('[data-testid="next-step-button"]');
+  await container_next_step_button.waitFor({ state: 'visible' });
+  await container_next_step_button.locator('span:has-text("Next")').first().click();
+  console.log('✅ Clicked next step button');
+
+
+  console.log('📝 Setting available time...');
+  await instructorPage.locator('[data-testid="date-picker__availableDate__input"] div:has-text("Select start date")').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="date-picker__availableDate__input"] div:has-text("Select start date")').click();
+  console.log('✅ Clicked available time input');
+
+  console.log('📝 Setting available date...');
+  await instructorPage.locator('[aria-label="April 6, 2025"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[aria-label="April 6, 2025"]').first().click();
+  console.log('✅ Set available date');
+
+  await instructorPage.locator('[data-testid="time-picker__availableTime__input"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="time-picker__availableTime__input"]').first().click();
+
+  await instructorPage.locator('[data-testid="time-picker__availableTime__dropdown"] div:has-text("Immediately")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="time-picker__availableTime__dropdown"] div:has-text("Immediately")').first().click();
+  console.log('✅ Selected immediately option');
+
+  await instructorPage.locator('[data-testid="date-picker__dueDate__input"] div:has-text("Select due date")').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="date-picker__dueDate__input"] div:has-text("Select due date")').click();
+
+  console.log('📝 Setting due date...');
+  await instructorPage.locator('[aria-label="April 30, 2025"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[aria-label="April 30, 2025"]').first().click();
+  console.log('✅ Set due date');
+
+  console.log('📝 Setting due time...');
+  await instructorPage.locator('[data-testid="time-picker__dueTime__input"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="time-picker__dueTime__input"]').first().click();
+  console.log('✅ Clicked due time input');
+
+  await instructorPage.locator('[data-testid="time-picker__dueTime__dropdown"] div:has-text("12:00 AM")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="time-picker__dueTime__dropdown"] div:has-text("12:00 AM")').first().click();
+  console.log('✅ Selected 12:00 AM option');
+
+  console.log('📝 Finalizing assignment...');
+  await instructorPage.locator('button:has-text("Finalize")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('button:has-text("Finalize")').first().click();
+  console.log('✅ Clicked finalize button');
+
+  console.log('📝 Handling finalizing modal...');
+  await instructorPage.locator('[data-testid="publish-assignment-modal"] button:has-text("Finalize")').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="publish-assignment-modal"] button:has-text("Finalize")').click();
+  console.log('✅ Clicked on finalizing message');
+
+  console.log('📝 Continuing to course content...');
+  await instructorPage.locator('span:has-text("Continue building course content")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('span:has-text("Continue building course content")').first().click();
+  console.log('🎉 Assignment creation completed successfully');
+}
+
+export async function addStudent(instructorPage: Page, context: TestContext, { studentEmail }: { studentEmail: string }) {
+  await instructorPage.goto(context.courseUrl);
+
+  await instructorPage.locator('span:has-text("Students")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('span:has-text("Students")').first().click();
+
+  await instructorPage.locator('span:has-text("Add student")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('span:has-text("Add student")').first().click();
+
+  await instructorPage.locator('span:has-text("Manually add students")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('span:has-text("Manually add students")').first().click();
+
+  await instructorPage.locator('[name="individual.0.email"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[name="individual.0.email"]').first().click();
+
+  await instructorPage.locator('[name="individual.0.email"]').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('[name="individual.0.email"]').first().fill('ducdm+student@gotitapp.co');
+
+  await instructorPage.locator('button:has-text("Add student")').first().waitFor({ state: 'visible' });
+  await instructorPage.locator('button:has-text("Add student")').first().click();
 }

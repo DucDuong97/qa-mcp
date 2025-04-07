@@ -412,9 +412,28 @@ function generatePuppeteerCode(pageName = 'page') {
     console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
     switch (action.type) {
       case 'click':
-        if (action.selector.startsWith('text/')) {
-          code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
-          code += `    await ${pageName}.click('${action.selector}');\n\n`;
+        if (action.selector.includes(':has-text(')) {
+          // Extract the text content and tag
+          const textMatch = action.selector.match(/:has-text\("([^"]+)"\)/);
+          const textContent = textMatch ? textMatch[1] : '';
+          const tagMatch = action.selector.match(/(\w+):has-text/);
+          const tagName = tagMatch ? tagMatch[1] : '';
+          
+          // Check if selector also includes data-testid
+          if (action.selector.includes('data-testid')) {
+            // Extract the data-testid
+            const testIdMatch = action.selector.match(/\[data-testid="([^"]+)"\]/);
+            const testId = testIdMatch ? testIdMatch[1] : '';
+            
+            // Use locator chaining to get more precise element
+            code += `    const container = ${pageName}.locator('[data-testid="${testId}"]');\n`;
+            code += `    await container.waitFor({ state: 'visible' });\n`;
+            code += `    await container.locator('${tagName}:has-text("${textContent}")').first().click();\n\n`;
+          } else {
+            // Tag + text selector
+            code += `    await ${pageName}.locator('${tagName}:has-text("${textContent}")').first().waitFor({ state: 'visible' });\n`;
+            code += `    await ${pageName}.locator('${tagName}:has-text("${textContent}")').first().click();\n\n`;
+          }
         } else {
           code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
           code += `    await ${pageName}.click('${action.selector}');\n\n`;
@@ -466,12 +485,30 @@ function generatePlaywrightCode(pageName = 'page') {
     console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
     switch (action.type) {
       case 'click':
-        if (action.selector.startsWith('text/')) {
-          code += `  await ${pageName}.getByText('${action.selector.replace('text/', '')}', { exact: true }).waitFor({ state: 'visible' });\n`;
-          code += `  await ${pageName}.getByText('${action.selector.replace('text/', '')}', { exact: true }).click();\n\n`;
+        if (action.selector.includes(':has-text(')) {
+          // Extract the text content and tag
+          const textMatch = action.selector.match(/:has-text\("([^"]+)"\)/);
+          const textContent = textMatch ? textMatch[1] : '';
+          const tagMatch = action.selector.match(/(\w+):has-text/);
+          const tagName = tagMatch ? tagMatch[1] : '';
+          
+          // Check if selector also includes data-testid
+          if (action.selector.includes('data-testid')) {
+            // Extract the data-testid
+            const testIdMatch = action.selector.match(/\[data-testid="([^"]+)"\]/);
+            const testId = testIdMatch ? testIdMatch[1] : '';
+            
+            // Use locator chaining to get more precise element
+            code += `  await ${pageName}.locator('[data-testid="${testId}"] ${tagName}:has-text("${textContent}")').waitFor({ state: 'visible' });\n`;
+            code += `  await ${pageName}.locator('[data-testid="${testId}"] ${tagName}:has-text("${textContent}")').click();\n\n`;
+          } else {
+            // Tag + text selector
+            code += `  await ${pageName}.locator('${tagName}:has-text("${textContent}")').first().waitFor({ state: 'visible' });\n`;
+            code += `  await ${pageName}.locator('${tagName}:has-text("${textContent}")').first().click();\n\n`;
+          }
         } else {
-          code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-          code += `  await ${pageName}.locator('${action.selector}').click();\n\n`;
+          code += `  await ${pageName}.locator('${action.selector}').first().waitFor({ state: 'visible' });\n`;
+          code += `  await ${pageName}.locator('${action.selector}').first().click();\n\n`;
         }
         break;
       case 'type':
@@ -479,8 +516,8 @@ function generatePlaywrightCode(pageName = 'page') {
         code += `  await ${pageName}.locator('${action.selector}').fill('${action.value}');\n\n`;
         break;
       case 'select':
-        code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `  await ${pageName}.locator('${action.selector}').selectOption('${action.value}');\n\n`;
+        code += `  await ${pageName}.locator('${action.selector}').first().waitFor({ state: 'visible' });\n`;
+        code += `  await ${pageName}.locator('${action.selector}').first().selectOption('${action.value}');\n\n`;
         break;
       case 'assertion':
         code += `  await expect(${pageName}.getByText('${action.expectedText}', { exact: true })).toBeVisible();\n\n`;

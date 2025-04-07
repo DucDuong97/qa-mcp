@@ -33,7 +33,7 @@ async function prepareFn(ctx: TestContext) {
 
   console.log('🔧 Preparing test environment...');
 
-  ctx.teardownFns.push(await createCourse(ctx, {}));
+  ctx.teardownFns.push(await createCourse(ctx.instructorPage, ctx, {}));
   
   console.log('✅ Test environment preparation complete');
 }
@@ -47,13 +47,7 @@ async function testFn(ctx: TestContext) {
   console.log('🧪 Starting module creation test...');
 
   // Create a module
-  const cleanupModule = await createModule(ctx, {
-    moduleName,
-  });
-  
-  // Add teardown function to the context
-  ctx.teardownFns = ctx.teardownFns || [];
-  ctx.teardownFns.push(cleanupModule);
+  await createModule(instructorPage, ctx, { moduleName });
   
   // Verify module was created
   await expect(instructorPage.getByText(moduleName, { exact: true })).toBeVisible();
