@@ -40,6 +40,13 @@ function getDirectTextContent(element) {
 function getSelector(element, level = 0) {
   console.log('🔍 Getting selector for element:', element);
 
+  // Priority 0: id
+  if (element.id && !element.id.startsWith(':') && !element.id.endsWith(':')) {
+    const selector = `#${element.id}`;
+    console.log('✅ Found id selector:', selector);
+    return selector;
+  }
+
   // Priority 1: data-testid
   if (element.getAttribute('data-testid')) {
     const selector = `[data-testid="${element.getAttribute('data-testid')}"]`;
@@ -113,12 +120,12 @@ function getSelector(element, level = 0) {
     let parent = element.parentElement;
     if (parent) {
       const parentSelector = getSelector(parent, 1);
-
-      if (parentSelector) {
-      if (TEXT_CONTAINERS.includes(parent.tagName)) {
-        return parentSelector;
-      }
       
+      if (parentSelector) {
+        if (TEXT_CONTAINERS.includes(parent.tagName)) {
+          return parentSelector;
+        }
+
         let selector = `${parentSelector} > ${element.tagName.toLowerCase()}`;
         let index = Array.from(parent.children).indexOf(element);
         
@@ -128,7 +135,8 @@ function getSelector(element, level = 0) {
         console.log('✅ Found parent context selector:', selector);
 
         if (selector){
-        return selector;
+          return selector;
+        }
       }
     }
   }

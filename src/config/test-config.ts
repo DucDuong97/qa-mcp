@@ -35,7 +35,7 @@ const defaultConfig: TestOptions = {
 
 const developmentConfig: TestOptions = {
   headless: false,
-  slowMo: 1000,
+  slowMo: 200,
   recordVideo: false,
   timeout: 60000,
   viewportWidth: 1280,
