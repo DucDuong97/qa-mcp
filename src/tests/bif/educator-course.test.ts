@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 
 import { runTest, TestContext } from '../../helpers/playwrightUtils.ts';
 import { getTestConfig } from '../../config/test-config.ts';
+import { createCourse } from '../../components/playwright.ts';
 
 test('should create a course', async () => {
   console.log('🚀 Starting course creation test...');
@@ -27,17 +28,19 @@ async function prepareFn(ctx: TestContext) {
   // prepareFn is optional, so we can skip it
 }
 
-async function testFn({ instructorPage }: TestContext) {
+async function testFn(ctx: TestContext) {
+  const { instructorPage } = ctx;
+
   if (!instructorPage) {
     throw new Error('Instructor page not initialized');
   }
 
   try {
-    
+    await createCourse(instructorPage, ctx, {});
     // Verify successful creation
     console.log('🔍 Verifying course creation...');
-    await instructorPage.getByText('Content', { exact: true }).waitFor({ state: 'visible' });
-    await instructorPage.getByText('Magic course', { exact: true }).waitFor({ state: 'visible' });
+    await instructorPage.getByRole('heading', { name: 'Content' }).waitFor({ state: 'visible' });
+    await instructorPage.getByLabel('Course details sidebar').getByText('Test course', { exact: true }).waitFor({ state: 'visible' });
     console.log('✅ Course created successfully!');
 
   } catch (error) {

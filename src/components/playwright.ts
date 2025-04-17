@@ -24,8 +24,8 @@ export async function createCourse(
   {
     courseName = 'Test course',
     subject = 'Calculus',
-    startDay = '12',
-    endDay = '16',
+    startDay,
+    endDay,
     plan = 'Advanced',
   }: {
     courseName?: string,
@@ -85,14 +85,13 @@ export async function createCourse(
   const startDatePicker = instructorPage.getByTestId('date-picker__startDate');
   await startDatePicker.waitFor({ state: 'visible' });
   await startDatePicker.click();
-  const nextMonthButton = instructorPage.getByText('›', { exact: true });
   if (!startDay) {
-    await nextMonthButton.waitFor({ state: 'visible' });
-    await nextMonthButton.click();
+    await selectDateToday(instructorPage);
+  }else{
+    const startDate = instructorPage.getByText(startDay || '12', { exact: true });
+    await startDate.waitFor({ state: 'visible' });
+    await startDate.click();
   }
-  const startDate = instructorPage.getByText(startDay || '12', { exact: true });
-  await startDate.waitFor({ state: 'visible' });
-  await startDate.click();
   console.log('✅ Start date set');
   
   // End date
@@ -100,12 +99,12 @@ export async function createCourse(
   await endDatePicker.waitFor({ state: 'visible' });
   await endDatePicker.click();
   if (!endDay) {
-    await nextMonthButton.waitFor({ state: 'visible' });
-    await nextMonthButton.click();
+    await selectDateNextMonth(instructorPage);
+  }else{
+    const endDate = instructorPage.getByText(endDay || '16', { exact: true });
+    await endDate.waitFor({ state: 'visible' });
+    await endDate.click();
   }
-  const endDate = instructorPage.getByText(endDay || '16', { exact: true });
-  await endDate.waitFor({ state: 'visible' });
-  await endDate.click();
   console.log('✅ End date set');
   
   // Course plan
@@ -399,4 +398,48 @@ export async function addStudent(instructorPage: Page, context: TestContext, { s
 
   await instructorPage.locator("form").getByRole('button', {name: "Add student"}).waitFor({ state: 'visible' });
   await instructorPage.locator("form").getByRole('button', {name: "Add student"}).click();
+}
+
+// IMPORTANT: expect the DatePicker to be visible before calling this function
+export async function selectDateToday(instructorPage: Page) {
+  // Compute today's date
+  const today = new Date();
+  const day = today.getDate();
+  const year = today.getFullYear();
+
+  const monthName = today.toLocaleString('default', { month: 'long' });
+
+  const dateTooltip = instructorPage.locator(`.Tooltip`)
+  await dateTooltip.waitFor({ state: 'visible' });
+  await dateTooltip.click();
+
+  console.log(`[Date tooltip] selecting [aria-label="${monthName} ${day}, ${year}"]`);
+
+  await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).waitFor({ state: 'visible' });
+  await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
+}
+
+// IMPORTANT: expect the DatePicker to be visible before calling this function
+export async function selectDateNextMonth(instructorPage: Page) {
+  // Compute today's date
+  const today = new Date();
+  const day = today.getDate();
+  const year = today.getFullYear();
+
+  const nextMonth = new Date(today);
+  nextMonth.setMonth(today.getMonth() + 1);
+  const monthName = nextMonth.toLocaleString('default', { month: 'long' });
+
+  const dateTooltip = instructorPage.locator(`.Tooltip`)
+  await dateTooltip.waitFor({ state: 'visible' });
+
+  // Click on the next month button
+  const nextMonthButton = dateTooltip.getByText('›', { exact: true });
+  await nextMonthButton.waitFor({ state: 'visible' });
+  await nextMonthButton.click();
+
+  console.log(`[Date tooltip] selecting [aria-label="${monthName} ${day}, ${year}"]`);
+
+  await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).waitFor({ state: 'visible' });
+  await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
 }
