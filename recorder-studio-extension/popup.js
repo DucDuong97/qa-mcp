@@ -487,52 +487,29 @@ function generatePlaywrightCode(pageName = 'page') {
     code += `// ${action.description}\n`;
     switch (action.type) {
       case 'click':
-        if (action.selector.includes(':has-text(')) {
-          // Extract the text content and tag
-          const textMatch = action.selector.match(/:has-text\("([^"]+)"\)/);
-          const textContent = textMatch ? textMatch[1] : '';
-          const tagMatch = action.selector.match(/(\w+):has-text/);
-          const tagName = tagMatch ? tagMatch[1] : '';
-          
-          // Check if selector also includes data-testid
-          if (action.selector.includes('data-testid')) {
-            // Extract the data-testid
-            const testIdMatch = action.selector.match(/\[data-testid="([^"]+)"\]/);
-            const testId = testIdMatch ? testIdMatch[1] : '';
-            
-            // Use locator chaining to get more precise element
-            code += `  await ${pageName}.locator('[data-testid="${testId}"]').getByRole('${tagName}', {name: "${textContent}"}).waitFor({ state: 'visible' });\n`;
-            code += `  await ${pageName}.locator('[data-testid="${testId}"]').getByRole('${tagName}', {name: "${textContent}"}).click();\n\n`;
-          } else {
-            // Tag + text selector
-            code += `  await ${pageName}.getByRole('${tagName}', {name: "${textContent}"}).waitFor({ state: 'visible' });\n`;
-            code += `  await ${pageName}.getByRole('${tagName}', {name: "${textContent}"}).click();\n\n`;
-          }
-        } else {
-          code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-          code += `  await ${pageName}.locator('${action.selector}').click();\n\n`;
-        }
+      code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
+      code += `  await ${pageName}.locator('xpath=${action.selector}').click();\n\n`;
         break;
       case 'type':
-        code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
         // Check if this is for a contenteditable element
         if (action.description && action.description.includes('contenteditable')) {
           // For contenteditable elements, use evaluate to set innerHTML
-          code += `  await ${pageName}.locator('${action.selector}').evaluate(el => { el.innerHTML = '${action.value.replace(/'/g, "\\'")}'; });\n\n`;
+          code += `  await ${pageName}.locator('xpath=${action.selector}').evaluate(el => { el.innerHTML = '${action.value.replace(/'/g, "\\'")}'; });\n\n`;
         } else {
           // For regular inputs, use fill method
-          code += `  await ${pageName}.locator('${action.selector}').fill('${action.value}');\n\n`;
+          code += `  await ${pageName}.locator('xpath=${action.selector}').fill('${action.value}');\n\n`;
         }
         break;
       case 'select':
-        code += `  await ${pageName}.locator('${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `  await ${pageName}.locator('${action.selector}').selectOption('${action.value}');\n\n`;
+        code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `  await ${pageName}.locator('xpath=${action.selector}').selectOption('${action.value}');\n\n`;
         break;
       case 'assertion':
         code += `  await expect(${pageName}.getByText('${action.expectedText}', { exact: true })).toBeVisible();\n\n`;
         break;
       case 'visible':
-        code += `  await expect(${pageName}.locator('${action.selector}')).toBeVisible();\n\n`;
+        code += `  await expect(${pageName}.locator('xpath=${action.selector}')).toBeVisible();\n\n`;
         break;
       case 'comment':
         code += `  // ${action.description}\n`;

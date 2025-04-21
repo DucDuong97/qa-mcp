@@ -253,7 +253,7 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   console.log('📝 Selecting item type...');  
   const container = moduleBlock.locator('[data-testid="itemType-selector"]');
   await container.waitFor({ state: 'visible' });
-  await container.locator('div:has-text("Select item type")').click();
+  await container.locator('div:has-text("Select item type")').first().click();
 
   console.log('✅ Clicked item type selector');
 
@@ -276,7 +276,7 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   console.log('✅ Clicked Add item button');
 
   console.log('📝 Finding and clicking created Test Assignment...');
-  await moduleBlock.locator('div:has-text("Test Assignment")').click();
+  await moduleBlock.getByText('Test Assignment', { exact: true }).click();
   console.log('✅ Clicked on Test Assignment');
 
   console.log('📝 Navigating to next step...');
@@ -286,10 +286,10 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
 
   const container_learning_objective_section_tabs = instructorPage.locator('[data-testid="learning-objective-section-tabs"]');
   await container_learning_objective_section_tabs.waitFor({ state: 'visible' });
-  await container_learning_objective_section_tabs.locator('div:has-text("Additional learning objectives")').click();
+  await container_learning_objective_section_tabs.getByText('Additional learning objectives', { exact: true }).click();
 
-  await instructorPage.locator('[data-testid="subject-item-title"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('[data-testid="subject-item-title"]').click();
+  await instructorPage.getByText('Numbers and Computation', { exact: true }).waitFor({ state: 'visible' });
+  await instructorPage.getByText('Numbers and Computation', { exact: true }).click();
 
   await instructorPage.locator('[data-testid="unit-item-84"]').waitFor({ state: 'visible' });
   await instructorPage.locator('[data-testid="unit-item-84"]').click();
@@ -334,8 +334,7 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   console.log('✅ Clicked available time input');
 
   console.log('📝 Setting available date...');
-  await instructorPage.locator('[aria-label="April 6, 2025"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('[aria-label="April 6, 2025"]').click();
+  await selectDateToday(instructorPage);
   console.log('✅ Set available date');
 
   await instructorPage.locator('[data-testid="time-picker__availableTime__input"]').waitFor({ state: 'visible' });
@@ -349,8 +348,7 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   await instructorPage.locator('[data-testid="date-picker__dueDate__input"] div:has-text("Select due date")').click();
 
   console.log('📝 Setting due date...');
-  await instructorPage.locator('[aria-label="April 30, 2025"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('[aria-label="April 30, 2025"]').click();
+  await selectDateNextMonth(instructorPage);
   console.log('✅ Set due date');
 
   console.log('📝 Setting due time...');
@@ -361,6 +359,8 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   await instructorPage.locator('[data-testid="time-picker__dueTime__dropdown"] div:has-text("12:00 AM")').waitFor({ state: 'visible' });
   await instructorPage.locator('[data-testid="time-picker__dueTime__dropdown"] div:has-text("12:00 AM")').click();
   console.log('✅ Selected 12:00 AM option');
+
+  await instructorPage.waitForTimeout(2000);
 
   console.log('📝 Finalizing assignment...');
   await instructorPage.locator('button:has-text("Finalize")').waitFor({ state: 'visible' });
@@ -394,7 +394,7 @@ export async function addStudent(instructorPage: Page, context: TestContext, { s
   await instructorPage.locator('[name="individual.0.email"]').click();
 
   await instructorPage.locator('[name="individual.0.email"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('[name="individual.0.email"]').fill('ducdm+student@gotitapp.co');
+  await instructorPage.locator('[name="individual.0.email"]').fill(studentEmail);
 
   await instructorPage.locator("form").getByRole('button', {name: "Add student"}).waitFor({ state: 'visible' });
   await instructorPage.locator("form").getByRole('button', {name: "Add student"}).click();
