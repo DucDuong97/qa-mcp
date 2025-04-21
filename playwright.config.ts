@@ -7,8 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
+  timeout: 40000, // Applies to all tests
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://poc.mathgpt.ai/',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -36,9 +37,10 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: 'npm run dev',
-    port: 3000,
-    reuseExistingServer: !process.env.CI,
-  },
+  // webServer: {
+  //   command: 'npm run dev',
+  //   port: 3000,
+  //   reuseExistingServer: !process.env.CI,
+  // },
 }); 
+

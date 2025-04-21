@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { runTest, TestContext } from '../../helpers/playwrightUtils.ts';
 import { getTestConfig } from '../../config/test-config.ts';
