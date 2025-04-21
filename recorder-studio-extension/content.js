@@ -36,112 +36,163 @@ function getDirectTextContent(element) {
     .trim();
 }
 
+// Helper function to check if an XPath selector is ambiguous (returns more than one element)
+function isAmbiguousSelector(selector) {
+  try {
+    const result = document.evaluate(
+      selector,
+      document,
+      null,
+      XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
+      null
+    );
+    
+    console.log(`🔍 XPath "${selector}" matches ${result.snapshotLength} elements`);
+    return result.snapshotLength > 1;
+  } catch (error) {
+    console.error(`❌ Error evaluating XPath: ${error}`);
+    return true; // Consider invalid XPath as ambiguous
+  }
+}
+
 // Helper function to get the most specific selector
 function getSelector(element, level = 0) {
   console.log('🔍 Getting selector for element:', element);
 
+  // Return null for non-element nodes
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+    return null;
+  }
+
+  // Stop at the body tag
+  if (element.tagName === 'BODY') {
+    return '//body';
+  }
+
   // Priority 0: id
   if (element.id && !element.id.startsWith(':') && !element.id.endsWith(':')) {
-    const selector = `#${element.id}`;
-    console.log('✅ Found id selector:', selector);
+    const selector = `//*[@id="${element.id}"]`;
+    console.log('✅ Found id xpath:', selector);
     return selector;
   }
 
   // Priority 1: data-testid
   if (element.getAttribute('data-testid')) {
-    const selector = `[data-testid="${element.getAttribute('data-testid')}"]`;
-    console.log('✅ Found data-testid selector:', selector);
-    return selector;
+    const selector = `//*[@data-testid="${element.getAttribute('data-testid')}"]`;
+    console.log('✅ Found data-testid xpath:', selector);
+    if (!isAmbiguousSelector(selector)) {
+      return selector;
+    }
   }
 
   // Priority 2: name attribute for form elements
   if (element.name && (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA')) {
-    const selector = `[name="${element.name}"]`;
-    console.log('✅ Found name selector:', selector);
-    return selector;
+    const selector = `//${element.tagName.toLowerCase()}[@name="${element.name}"]`;
+    console.log('✅ Found name xpath:', selector);
+    if (!isAmbiguousSelector(selector)) {
+      return selector;
+    }
   }
 
   // Priority 3: placeholder for inputs
   if (element.getAttribute('placeholder')) {
-    const selector = `input[placeholder="${element.getAttribute('placeholder')}"]`;
-    console.log('✅ Found placeholder selector:', selector);
-    return selector;
+    const selector = `//input[normalize-space(@placeholder)="${element.getAttribute('placeholder')}"]`;
+    console.log('✅ Found placeholder xpath:', selector);
+    if (!isAmbiguousSelector(selector)) {
+      return selector;
+    }
   }
 
   // Priority 4: aria-label
   if (element.getAttribute('aria-label')) {
-    const selector = `[aria-label="${element.getAttribute('aria-label')}"]`;
-    console.log('✅ Found aria-label selector:', selector);
-    return selector;
+    const selector = `//*[normalize-space(@aria-label)="${element.getAttribute('aria-label')}"]`;
+    console.log('✅ Found aria-label xpath:', selector);
+    if (!isAmbiguousSelector(selector)) {
+      return selector;
+    }
   }
 
   // Priority 5: text content
   if (TEXT_CONTAINERS.includes(element.tagName)) {
     const directText = getDirectTextContent(element);
     if (directText) {
-      // Find closest ancestor with data-testid (including self)
-      let currentElement = element;
-      let testIdAncestor = null;
-      while (currentElement && !testIdAncestor) {
-        if (currentElement.getAttribute('data-testid')) {
-          testIdAncestor = currentElement;
-        } else {
-          currentElement = currentElement.parentElement;
-        }
+      const tagName = element.tagName.toLowerCase();
+      const selector = `//${tagName}[normalize-space(text())="${directText}"]`;
+      console.log('✅ Found direct text content xpath with tag:', selector);
+      if (!isAmbiguousSelector(selector)) {
+        return selector;
       }
-      
-      let selector;
-      if (testIdAncestor) {
-        const testId = testIdAncestor.getAttribute('data-testid');
-        const tagName = element.tagName.toLowerCase();
-        selector = `[data-testid="${testId}"] ${tagName}:has-text("${directText}")`;
-        console.log('✅ Found text content with data-testid and tag context:', selector);
-      } else {
-        const tagName = element.tagName.toLowerCase();
-        selector = `${tagName}:has-text("${directText}")`;
-        console.log('✅ Found direct text content selector with tag:', selector);
-      }
-      return selector;
     }
   }
 
   if (level == 0){
-    // Priority 6: a child element with text content
+    // Priority 6: a child element
     const children = element.childNodes;
     for (const child of children) {
+      // Skip non-element nodes
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      
       const selector = getSelector(child, -1);
       if (selector) {
-        console.log('✅ Found child element with text content:', selector);
-        return selector;
-      }
-    }
-
-    // Priority 7: tag name with parent context
-    let parent = element.parentElement;
-    if (parent) {
-      const parentSelector = getSelector(parent, 1);
-      
-      if (parentSelector) {
-        if (TEXT_CONTAINERS.includes(parent.tagName)) {
+        const parentSelector = selector + "/..";
+        console.log('✅ Found child element with text content:', parentSelector);
+        if (!isAmbiguousSelector(parentSelector)) {
           return parentSelector;
-        }
-
-        let selector = `${parentSelector} > ${element.tagName.toLowerCase()}`;
-        let index = Array.from(parent.children).indexOf(element);
-        
-        if (index > 0) {
-          selector += `:nth-child(${index + 1})`;
-        }
-        console.log('✅ Found parent context selector:', selector);
-
-        if (selector){
-          return selector;
         }
       }
     }
   }
+
+  if (level < 0){
+    return null;
+  }
+
+  // Priority 7: recursive path to the body
+  const parent = element.parentNode;
+  if (parent) {
+    const parentSelector = getSelector(parent, level + 1);
+    if (parentSelector) {
+      // Get the index of the element among siblings of the same type
+      const siblings = Array.from(parent.children).filter(
+        child => child.tagName === element.tagName
+      );
+      const index = siblings.indexOf(element) + 1;
+      
+      // Build the selector
+      const tagName = element.tagName.toLowerCase();
+      const selector = siblings.length > 1 
+        ? `${parentSelector}/${tagName}[${index}]` 
+        : `${parentSelector}/${tagName}`;
+      
+      console.log('✅ Found recursive xpath:', selector);
+      // No need to check for ambiguity here as this should be specific enough
+      return selector;
+    }
+  }
+
+  // Fallback: create a full path from the root with indices
+  let currentElem = element;
+  let fullPath = '';
   
-  return null;
+  while (currentElem && currentElem.nodeType === Node.ELEMENT_NODE) {
+    if (currentElem.tagName === 'BODY') {
+      fullPath = '//BODY' + fullPath;
+      break;
+    }
+    
+    let tagName = currentElem.tagName.toLowerCase();
+    let siblings = Array.from(currentElem.parentNode.children).filter(
+      child => child.tagName === currentElem.tagName
+    );
+    
+    let index = siblings.length > 1 ? `[${siblings.indexOf(currentElem) + 1}]` : '';
+    fullPath = `/${tagName}${index}` + fullPath;
+    
+    currentElem = currentElem.parentNode;
+  }
+  
+  console.log('✅ Created absolute xpath as fallback:', fullPath);
+  return fullPath;
 }
 
 // Record click events
