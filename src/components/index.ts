@@ -1,5 +1,5 @@
 import { Page, expect, Locator } from "@playwright/test";
-import { TestContext } from "../helpers/playwrightUtils.ts";
+import { TestContext } from "../helpers/index.ts";
 
 export async function escapeUserGuide(page: Page) {
   let okGotIt = page.getByText('OK, got it', { exact: true });

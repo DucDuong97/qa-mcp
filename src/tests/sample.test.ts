@@ -1,8 +1,8 @@
 import { Page, expect } from '@playwright/test';
 
 import { getTestConfig } from '../config/test-config.ts';
-import { runTest, TestContext } from '../helpers/playwrightUtils.ts';
-import { escapeUserGuide } from '../components/playwright.ts';
+import { runTest, TestContext } from '../helpers/index.ts';
+import { escapeUserGuide } from '../components/index.ts';
 
 test('should do an action', async () => {
   console.log('🚀 Starting test...');

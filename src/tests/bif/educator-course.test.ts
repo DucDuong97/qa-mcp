@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
 
-import { runTest, TestContext } from '../../helpers/playwrightUtils.ts';
+import { runTest, TestContext } from '../../helpers/index.ts';
 import { getTestConfig } from '../../config/test-config.ts';
-import { createCourse } from '../../components/playwright.ts';
+import { createCourse } from '../../components/index.ts';
 
 test('should create a course', async () => {
   console.log('🚀 Starting course creation test...');

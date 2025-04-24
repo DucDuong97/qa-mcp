@@ -1,7 +1,9 @@
 import { Browser, BrowserContext, Page, chromium, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import MailSanbox from './mail.ts';
 
+export const mailSanbox = new MailSanbox();
 /**
  * Simple test context that holds test resources
  */

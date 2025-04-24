@@ -1,8 +1,8 @@
 import { expect, Page } from '@playwright/test';
 
-import { runTest, TestContext } from '../../helpers/playwrightUtils.ts';
+import { runTest, TestContext } from '../../helpers/index.ts';
 import { getTestConfig } from '../../config/test-config.ts';
-import { createCourse, createModule } from '../../components/playwright.ts';
+import { createCourse, createModule } from '../../components/index.ts';
 
 test('should create and delete a module', async () => {
   console.log('🚀 Starting module management test...');

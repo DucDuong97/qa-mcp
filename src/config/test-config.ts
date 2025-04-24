@@ -1,4 +1,4 @@
-import { TestOptions } from '../helpers/playwrightUtils.js';
+import { TestOptions } from '../helpers/index.ts';
 
 interface LoginOptions {
   instructorLogin?: {
