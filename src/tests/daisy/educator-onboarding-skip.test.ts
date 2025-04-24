@@ -103,7 +103,7 @@ async function testFn(ctx: TestContext) {
   console.log('✅ Navigated to verify email page:', page.url());
 
   await fillSignUpForm(page);
-  await onboardingAskTextbookAsStudent(page);
+  await onboardingSkipFull(page);
 }
 
 async function fillSignUpForm(signUpPage: Page) {
@@ -144,54 +144,44 @@ async function fillSignUpForm(signUpPage: Page) {
   await signUpPage.locator('xpath=//span[normalize-space(text())="Sign up as an Instructor"]').click();
 }
 
-async function onboardingAskTextbookAsStudent(instructorPage: Page) {
+async function onboardingSkipFull(instructorPage: Page) {
   // Assert text "We're excited to have you here!" exists
   await expect(instructorPage.getByText('We\'re excited to have you here!', { exact: true })).toBeVisible();
 
-// Click on "I want to experience the AI Tutor as a s..."
-  await instructorPage.locator('xpath=//div[normalize-space(text())="I want to experience the AI Tutor as a student."]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//div[normalize-space(text())="I want to experience the AI Tutor as a student."]').click();
+// Click on "I'd like some help setting up my course."
+  await instructorPage.locator('xpath=//div[normalize-space(text())="I\'d like some help setting up my course."]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//div[normalize-space(text())="I\'d like some help setting up my course."]').click();
 
-// Click on "div"
-  await instructorPage.locator('xpath=//*[@id="modal-instructor-onboarding-welcome-dialog"]/div/div/div[1]/div/div[2]/div[1]/div[2]/button[3]/div[2]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@id="modal-instructor-onboarding-welcome-dialog"]/div/div/div[1]/div/div[2]/div[1]/div[2]/button[3]/div[2]').click();
-
-// Click on "div"
-  await instructorPage.locator('xpath=//*[@id="modal-instructor-onboarding-welcome-dialog"]/div/div/div[1]/div/div[2]/div[2]/div[2]/button[2]/div[2]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@id="modal-instructor-onboarding-welcome-dialog"]/div/div/div[1]/div/div[2]/div[2]/div[2]/button[2]/div[2]').click();
-
-// Click on "Continue"
-  await instructorPage.locator('xpath=//span[normalize-space(text())="Continue"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//span[normalize-space(text())="Continue"]').click();
-
-// Click on "div"
-  await instructorPage.locator('xpath=//*[@id="walkthrough_overlay_container"]/div/div').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@id="walkthrough_overlay_container"]/div/div').click();
-
-// Click on "Start"
-  await instructorPage.locator('xpath=//*[@data-testid="start-assignment-button"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@data-testid="start-assignment-button"]').click();
+// Assert text "Application menu" exists
+  await expect(instructorPage.getByText('Application menu', { exact: true })).toBeVisible();
 
 // Click on "Next"
-  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]').click();
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').click();
 
-// Click on "div"
-  await instructorPage.locator('xpath=//*[@id="walkthrough_overlay_container"]/div/div').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@id="walkthrough_overlay_container"]/div/div').click();
+// Assert text "Sample course" exists
+  await expect(instructorPage.getByText('Sample course', { exact: true })).toBeVisible();
 
-// Click on "Ask MathGPT"
-  await instructorPage.locator('xpath=//*[@data-testid="ask-mathgpt-button"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@data-testid="ask-mathgpt-button"]').click();
+// Click on "Next"
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').click();
 
-// Click on "p"
-  await instructorPage.locator('xpath=//*[@id="chat-section"]/div[1]/div[2]/div/div[1]/div/div/div[1]/div[1]/p').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[@id="chat-section"]/div[1]/div[2]/div/div[1]/div/div/div[1]/div[1]/p').click();
+// Assert text "Create your own courses" exists
+  await expect(instructorPage.getByText('Create your own courses', { exact: true })).toBeVisible();
 
-// Click on "div"
-  await instructorPage.locator('xpath=//*[normalize-space(@aria-label)="Send message"]').waitFor({ state: 'visible' });
-  await instructorPage.locator('xpath=//*[normalize-space(@aria-label)="Send message"]').click();
+// Click on "Next"
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Next"]/..').click();
 
+// Assert text "Need assistance?" exists
+  await expect(instructorPage.getByText('Need assistance?', { exact: true })).toBeVisible();
+
+// Click on "Finish"
+  await instructorPage.locator('xpath=//button[normalize-space(text())="Finish"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//button[normalize-space(text())="Finish"]').click();
+
+// Assert text "Instructor" exists
+  await expect(instructorPage.getByText('Instructor', { exact: true })).toBeVisible();
 }
 
 function decodeHtml(html: string) {
