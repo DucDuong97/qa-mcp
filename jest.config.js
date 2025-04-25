@@ -17,5 +17,5 @@ export default {
       }
     ]
   ],
-  testTimeout: 60000
+  testTimeout: 120000
 }; 

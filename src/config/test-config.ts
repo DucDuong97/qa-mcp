@@ -25,7 +25,7 @@ interface LoginOptions {
 
 const defaultConfig: TestOptions = {
   headless: true,
-  slowMo: 200,
+  slowMo: 100,
   recordVideo: true,
   timeout: 60000,
   viewportWidth: 1280,
@@ -35,7 +35,7 @@ const defaultConfig: TestOptions = {
 
 const developmentConfig: TestOptions = {
   headless: false,
-  slowMo: 200,
+  slowMo: 100,
   recordVideo: false,
   timeout: 60000,
   viewportWidth: 1280,

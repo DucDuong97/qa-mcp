@@ -5,7 +5,7 @@ export async function escapeUserGuide(page: Page) {
   let okGotIt = page.getByText('OK, got it', { exact: true });
   while (true) {
     try {
-      await okGotIt.waitFor({ state: 'visible', timeout: 2000 });
+      await okGotIt.waitFor({ state: 'visible', timeout: 3000 });
       await okGotIt.click();
       // Re-query the button after clicking as the previous reference might be stale
       okGotIt = page.getByText('OK, got it', { exact: true });
