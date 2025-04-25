@@ -15,7 +15,6 @@ test('should duplicate a course successfully', async () => {
   
     // Step 1: Click "Create new course"
     await expect(instructorPage.getByText('Create new course', { exact: true })).toBeVisible();
-    await instructorPage.waitForTimeout(300);
     await instructorPage.getByText('Create new course', { exact: true }).click();
 
     // Step 2: Select "Duplicate a course"

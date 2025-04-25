@@ -5,7 +5,7 @@ export async function escapeUserGuide(page: Page) {
   let okGotIt = page.getByText('OK, got it', { exact: true });
   while (true) {
     try {
-      await okGotIt.waitFor({ state: 'visible', timeout: 3000 });
+      await okGotIt.waitFor({ state: 'visible', timeout: 2000 });
       await okGotIt.click();
       // Re-query the button after clicking as the previous reference might be stale
       okGotIt = page.getByText('OK, got it', { exact: true });
@@ -14,6 +14,18 @@ export async function escapeUserGuide(page: Page) {
       console.log('No more OK, got it buttons found');
       break;
     }
+  }
+}
+
+
+export async function escapeStudentWelcomeModal(studentPage: Page) {
+  let laterButton = studentPage.locator('xpath=//*[@data-testid="modal-secondary-button"]');
+  try {
+    await laterButton.waitFor({ state: 'visible', timeout: 2000 });
+    await laterButton.click();
+  } catch (error) {
+    // No more buttons found, break the loop
+    console.log('No more later buttons found');
   }
 }
 
@@ -141,33 +153,38 @@ export async function createCourse(
   ctxt.courseUrl = instructorPage.url();
 
   return async () => {
-    await instructorPage.goto(ctxt.courseUrl);
+    await deleteCourse(instructorPage, ctxt.courseUrl);
+  }
+}
 
-    try {
-      await instructorPage.locator('span:has-text("Unpublish course")').waitFor({ state: 'visible' });
-      await instructorPage.locator('span:has-text("Unpublish course")').click();
-    
-      await instructorPage.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
-      await instructorPage.locator('[data-testid="modal-primary-button"]').click();
-    } catch (error) {
-      console.log('🔍 No unpublish course button found');
-    }
 
-    await instructorPage.getByText('Settings', { exact: true }).waitFor({ state: 'visible' });
-    await instructorPage.getByText('Settings', { exact: true }).click();
+async function deleteCourse(instructorPage: Page, courseUrl: string) {
+  await instructorPage.goto(courseUrl);
 
-    await instructorPage.locator('span:has-text("Delete course")').waitFor({ state: 'visible' });
-    await instructorPage.locator('span:has-text("Delete course")').click();
-  
-    await instructorPage.locator('input[placeholder="YES"]').waitFor({ state: 'visible' });
-    await instructorPage.locator('input[placeholder="YES"]').click();
-  
-    await instructorPage.locator('input[placeholder="YES"]').waitFor({ state: 'visible' });
-    await instructorPage.locator('input[placeholder="YES"]').fill('YES');
+  try {
+    await instructorPage.locator('xpath=//span[normalize-space(text())="Published"]/..').waitFor({ state: 'visible' });
+    await instructorPage.locator('xpath=//span[normalize-space(text())="Published"]/..').click();
   
     await instructorPage.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
-    await instructorPage.locator('[data-testid="modal-primary-button"]').click();  
+    await instructorPage.locator('[data-testid="modal-primary-button"]').click();
+  } catch (error) {
+    console.log('🔍 No unpublish course button found');
   }
+
+  await instructorPage.getByText('Settings', { exact: true }).waitFor({ state: 'visible' });
+  await instructorPage.getByText('Settings', { exact: true }).click();
+
+  await instructorPage.locator('span:has-text("Delete course")').waitFor({ state: 'visible' });
+  await instructorPage.locator('span:has-text("Delete course")').click();
+
+  await instructorPage.locator('input[placeholder="YES"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('input[placeholder="YES"]').click();
+
+  await instructorPage.locator('input[placeholder="YES"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('input[placeholder="YES"]').fill('YES');
+
+  await instructorPage.locator('[data-testid="modal-primary-button"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('[data-testid="modal-primary-button"]').click();  
 }
 
 
@@ -378,6 +395,7 @@ export async function addAssignment(instructorPage: Page, context: TestContext, 
   console.log('🎉 Assignment creation completed successfully');
 }
 
+
 export async function addStudent(instructorPage: Page, context: TestContext, { studentEmail }: { studentEmail: string }) {
   await instructorPage.goto(context.courseUrl);
 
@@ -400,14 +418,17 @@ export async function addStudent(instructorPage: Page, context: TestContext, { s
   await instructorPage.locator("form").getByRole('button', {name: "Add student"}).click();
 }
 
+
 // IMPORTANT: expect the DatePicker to be visible before calling this function
 export async function selectDateToday(instructorPage: Page) {
   // Compute today's date
   const today = new Date();
-  const day = today.getDate();
-  const year = today.getFullYear();
+  // Convert to Pacific Daylight Time (UTC-7)
+  const todayPacific = new Date(today.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  const day = todayPacific.getDate();
+  const year = todayPacific.getFullYear();
 
-  const monthName = today.toLocaleString('default', { month: 'long' });
+  const monthName = todayPacific.toLocaleString('default', { month: 'long' });
 
   const dateTooltip = instructorPage.locator(`.Tooltip`)
   await dateTooltip.waitFor({ state: 'visible' });
@@ -419,15 +440,18 @@ export async function selectDateToday(instructorPage: Page) {
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
 }
 
+
 // IMPORTANT: expect the DatePicker to be visible before calling this function
 export async function selectDateNextMonth(instructorPage: Page) {
   // Compute today's date
   const today = new Date();
-  const day = today.getDate();
-  const year = today.getFullYear();
+  // Convert to Pacific Daylight Time (UTC-7)
+  const todayPacific = new Date(today.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  const day = todayPacific.getDate();
+  const year = todayPacific.getFullYear();
 
-  const nextMonth = new Date(today);
-  nextMonth.setMonth(today.getMonth() + 1);
+  const nextMonth = new Date(todayPacific);
+  nextMonth.setMonth(todayPacific.getMonth() + 1);
   const monthName = nextMonth.toLocaleString('default', { month: 'long' });
 
   const dateTooltip = instructorPage.locator(`.Tooltip`)
@@ -442,4 +466,78 @@ export async function selectDateNextMonth(instructorPage: Page) {
 
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).waitFor({ state: 'visible' });
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
+}
+
+
+export async function duplicateCourse(instructorPage: Page, context: TestContext, {
+  newCourseName,
+  courseNameToCopy = 'Automation Test - Student Do Assignment',
+}: {
+  newCourseName: string,
+  courseNameToCopy: string,
+}) {
+  // Step 1: Click "Create new course"
+  await expect(instructorPage.getByText('Create new course', { exact: true })).toBeVisible();
+  await instructorPage.getByText('Create new course', { exact: true }).click();
+
+  // Step 2: Select "Duplicate a course"
+  await expect(instructorPage.getByText('Duplicate a course', { exact: true })).toBeVisible();
+  await instructorPage.getByText('Duplicate a course', { exact: true }).click({ force: true });
+
+  // Click on "input"
+  await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').click();
+
+  // Type "Automation Test - Student Do Assignment" into Search course name
+  await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').fill(courseNameToCopy);
+  await instructorPage.waitForTimeout(2000);
+
+  // Step 4: Click "Duplicate course"
+  const buttons = instructorPage.getByText('Duplicate course', { exact: true }).first();
+  await expect(buttons).toBeVisible(); 
+  await buttons.click();    
+
+  // Step 5: Confirm modal
+  const modalPrimaryBtn = instructorPage.locator('[data-testid="modal-primary-button"]');
+  await expect(modalPrimaryBtn).toBeVisible();
+  await modalPrimaryBtn.click();
+
+  // Step 6: Fill course name
+  const courseNameInput = instructorPage.locator('input[placeholder="Enter course name"]');
+  await expect(courseNameInput).toBeVisible();
+  await courseNameInput.fill(newCourseName);
+
+  // Step 7: Set start and end dates
+  const startDatePicker = instructorPage.getByTestId('date-picker__startDate');
+  await startDatePicker.waitFor({ state: 'visible' });
+  await startDatePicker.click();
+  await selectDateToday(instructorPage);
+  
+  // End date
+  const endDatePicker = instructorPage.getByTestId('date-picker__endDate');
+  await endDatePicker.waitFor({ state: 'visible' });
+  await endDatePicker.click();
+  await selectDateNextMonth(instructorPage);
+    
+  // Step 8: Select course plan
+  await expect(instructorPage.getByText('Advanced', { exact: true })).toBeVisible();
+  await instructorPage.getByText('Advanced', { exact: true }).click();
+
+  // Step 9: Click Create button
+  const createBtn = instructorPage.getByTestId('create-course-btn');
+  await expect(createBtn).toBeVisible();
+  await createBtn.click();
+
+  // Step 10: Confirm final modal
+  await expect(modalPrimaryBtn).toBeVisible();
+  await modalPrimaryBtn.click();
+  
+  await escapeUserGuide(instructorPage);
+
+  context.courseUrl = instructorPage.url();
+
+  return async () => {
+    await deleteCourse(instructorPage, context.courseUrl);
+  }
 }
