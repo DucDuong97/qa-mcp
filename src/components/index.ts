@@ -21,7 +21,7 @@ export async function escapeUserGuide(page: Page) {
 export async function escapeStudentWelcomeModal(studentPage: Page) {
   let laterButton = studentPage.locator('xpath=//*[@data-testid="modal-secondary-button"]');
   try {
-    await laterButton.waitFor({ state: 'visible', timeout: 2000 });
+    await laterButton.waitFor({ state: 'visible', timeout: 5000 });
     await laterButton.click();
   } catch (error) {
     // No more buttons found, break the loop
@@ -432,12 +432,15 @@ export async function selectDateToday(instructorPage: Page) {
 
   const dateTooltip = instructorPage.locator(`.Tooltip`)
   await dateTooltip.waitFor({ state: 'visible' });
-  await dateTooltip.click();
+  // await dateTooltip.click();
 
   console.log(`[Date tooltip] selecting [aria-label="${monthName} ${day}, ${year}"]`);
 
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).waitFor({ state: 'visible' });
+  console.log('✅ Found date');
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
+
+  console.log('✅ Selected date');
 }
 
 
