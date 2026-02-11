@@ -3,6 +3,7 @@ export default {
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.ts'],
   verbose: true,
+  setupFilesAfterEnv: ["dotenv/config"],
   reporters: [
     'default',
     [

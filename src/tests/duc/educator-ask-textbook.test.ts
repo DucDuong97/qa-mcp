@@ -19,7 +19,7 @@ test('should create and delete a module', async () => {
       },
       studentLogin: {
         env: 'poc',
-        email: 'ducdm+student@gotitapp.co',
+        email: 'ducdm+student1@gotitapp.co',
         password: 'GotIt123'
       }
     })
@@ -50,7 +50,7 @@ async function prepareFn(ctx: TestContext) {
 
   await instructorPage.waitForTimeout(2000);
 
-  await addStudent(instructorPage, ctx, { studentEmail: 'ducdm+student@gotitapp.co' });
+  await addStudent(instructorPage, ctx, { studentEmail: 'ducdm+student1@gotitapp.co' });
 }
 
 async function testFn(ctxt: TestContext) {

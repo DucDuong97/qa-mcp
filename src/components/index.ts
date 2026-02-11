@@ -432,11 +432,15 @@ export async function selectDateToday(instructorPage: Page) {
 
   const dateTooltip = instructorPage.locator(`.Tooltip`)
   await dateTooltip.waitFor({ state: 'visible' });
+  // await dateTooltip.click();
 
   console.log(`[Date tooltip] selecting [aria-label="${monthName} ${day}, ${year}"]`);
 
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).waitFor({ state: 'visible' });
+  console.log('✅ Found date');
   await dateTooltip.locator(`[aria-label="${monthName} ${day}, ${year}"]`).click();
+
+  console.log('✅ Selected date');
 }
 
 
