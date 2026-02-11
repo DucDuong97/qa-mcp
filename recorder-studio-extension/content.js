@@ -87,7 +87,7 @@ function getSelector(element, level = 0) {
 
   // Priority 2: name attribute for form elements
   if (element.name && (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA')) {
-    const selector = `//${element.tagName.toLowerCase()}[@name="${element.name}"]`;
+    const selector = `//*[local-name()="${element.tagName.toLowerCase()}"][@name="${element.name}"]`;
     console.log('✅ Found name xpath:', selector);
     if (!isAmbiguousSelector(selector)) {
       return selector;
@@ -96,7 +96,7 @@ function getSelector(element, level = 0) {
 
   // Priority 3: placeholder for inputs
   if (element.getAttribute('placeholder')) {
-    const selector = `//input[normalize-space(@placeholder)="${element.getAttribute('placeholder')}"]`;
+    const selector = `//*[local-name()="input"][normalize-space(@placeholder)="${element.getAttribute('placeholder')}"]`;
     console.log('✅ Found placeholder xpath:', selector);
     if (!isAmbiguousSelector(selector)) {
       return selector;
@@ -117,7 +117,7 @@ function getSelector(element, level = 0) {
     const directText = getDirectTextContent(element);
     if (directText) {
       const tagName = element.tagName.toLowerCase();
-      const selector = `//${tagName}[normalize-space(text())="${directText}"]`;
+      const selector = `//*[local-name()="${tagName}"][normalize-space(text())="${directText}"]`;
       console.log('✅ Found direct text content xpath with tag:', selector);
       if (!isAmbiguousSelector(selector)) {
         return selector;
@@ -161,8 +161,8 @@ function getSelector(element, level = 0) {
       // Build the selector
       const tagName = element.tagName.toLowerCase();
       const selector = siblings.length > 1 
-        ? `${parentSelector}/${tagName}[${index}]` 
-        : `${parentSelector}/${tagName}`;
+        ? `${parentSelector}/*[local-name()="${tagName}"][${index}]` 
+        : `${parentSelector}/*[local-name()="${tagName}"]`;
       
       console.log('✅ Found recursive xpath:', selector);
       // No need to check for ambiguity here as this should be specific enough
@@ -186,7 +186,7 @@ function getSelector(element, level = 0) {
     );
     
     let index = siblings.length > 1 ? `[${siblings.indexOf(currentElem) + 1}]` : '';
-    fullPath = `/${tagName}${index}` + fullPath;
+    fullPath = `/*[local-name()="${tagName}"]${index}` + fullPath;
     
     currentElem = currentElem.parentNode;
   }
@@ -241,6 +241,54 @@ document.addEventListener('click', (e) => {
               selector,
               expectedColor: color,
               description: `Assert color is "${color}"`,
+            }
+          });
+          break;
+          
+        case 'background-color':
+          const bgComputedStyle = window.getComputedStyle(element);
+          let backgroundColor = bgComputedStyle.backgroundColor;
+          let parentElementTag = null;
+          
+          // If background color is transparent, look for parent element with non-transparent background
+          if (backgroundColor === 'rgba(0, 0, 0, 0)' || backgroundColor === 'transparent') {
+            console.log('🔍 Element has transparent background, checking parent elements');
+            let currentElement = element.parentElement;
+            let found = false;
+            
+            while (currentElement && currentElement.tagName !== 'BODY' && !found) {
+              const parentStyle = window.getComputedStyle(currentElement);
+              const parentBgColor = parentStyle.backgroundColor;
+              
+              if (parentBgColor !== 'rgba(0, 0, 0, 0)' && parentBgColor !== 'transparent') {
+                backgroundColor = parentBgColor;
+                found = true;
+                console.log(`✅ Found non-transparent background on parent: ${backgroundColor}`);
+                // Store the tag name of the parent that has the background color
+                parentElementTag = currentElement.tagName.toLowerCase();
+              } else {
+                currentElement = currentElement.parentElement;
+              }
+            }
+          }
+          
+          // Create description based on whether we found a background color
+          const isFromParent = backgroundColor !== bgComputedStyle.backgroundColor;
+          let description;
+          
+          if (isFromParent) {
+            description = `Assert inherited background color "${backgroundColor}" from parent ${parentElementTag}`;
+          } else {
+            description = `Assert background color is "${backgroundColor}"`;
+          }
+          
+          chrome.runtime.sendMessage({
+            type: 'ACTION_RECORDED',
+            action: {
+              type: 'background-color-assertion',
+              selector,
+              expectedBgColor: backgroundColor,
+              description,
             }
           });
           break;
@@ -325,6 +373,10 @@ style.textContent = `
     outline: 2px solid #4CAF50 !important;
     cursor: crosshair !important;
   }
+  .puppeteer-recorder-assertion-background-color {
+    outline: 2px solid #FF9800 !important;
+    cursor: crosshair !important;
+  }
   .puppeteer-recorder-assertion-visible {
     outline: 2px solid #9C27B0 !important;
     cursor: crosshair !important;
@@ -348,6 +400,7 @@ document.addEventListener('mouseout', (e) => {
     'puppeteer-recorder-hover',
     'puppeteer-recorder-assertion-text',
     'puppeteer-recorder-assertion-color',
+    'puppeteer-recorder-assertion-background-color',
     'puppeteer-recorder-assertion-visible'
   );
 }); 

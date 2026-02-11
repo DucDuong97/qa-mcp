@@ -22,10 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const recordBtn = document.getElementById('recordBtn');
   const generateBtn = document.getElementById('generateBtn');
+
+  console.log('🔄 Generate button:', generateBtn);
   const clearBtn = document.getElementById('clearBtn');
   const assertTextBtn = document.getElementById('assertTextBtn');
   const assertColorBtn = document.getElementById('assertColorBtn');
-  const assertVisibleBtn = document.getElementById('assertVisibleBtn');
+  const assertBgColorBtn = document.getElementById('assertBgColorBtn');
   const addCommentBtn = document.getElementById('addCommentBtn');
   const commentInput = document.getElementById('commentInput');
   const commentInputRow = document.getElementById('commentInputRow');
@@ -110,14 +112,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  assertVisibleBtn.addEventListener('click', () => {
-    console.log('🎯 Entering visibility assertion mode');
+  assertBgColorBtn.addEventListener('click', () => {
+    console.log('🎯 Entering background color assertion mode');
     chrome.runtime.sendMessage({
       type: 'ADD_ASSERTION_MODE',
-      assertionType: 'visible'
+      assertionType: 'background-color'
     });
   });
-  
+
   // Toggle comment input field when Add Comment button is clicked
   addCommentBtn.addEventListener('click', () => {
     // Hide wait input if it's open
@@ -357,6 +359,9 @@ function updateActionList() {
       updateActionList();
     });
   });
+  
+  // Scroll to the bottom of the action list
+  $actionList.scrollTop = $actionList.scrollHeight;
 }
 
 // Function to add a comment action
@@ -403,79 +408,6 @@ function addWaitAction() {
   }
 }
 
-function generatePuppeteerCode(pageName = 'page') {
-  console.log(`⚙️ Starting Puppeteer code generation for ${pageName}`);
-  
-  let code = "";
-  
-  recordedActions.forEach((action, index) => {
-    console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
-    switch (action.type) {
-      case 'click':
-        if (action.selector.includes(':has-text(')) {
-          // Extract the text content and tag
-          const textMatch = action.selector.match(/:has-text\("([^"]+)"\)/);
-          const textContent = textMatch ? textMatch[1] : '';
-          const tagMatch = action.selector.match(/(\w+):has-text/);
-          const tagName = tagMatch ? tagMatch[1] : '';
-          
-          // Check if selector also includes data-testid
-          if (action.selector.includes('data-testid')) {
-            // Extract the data-testid
-            const testIdMatch = action.selector.match(/\[data-testid="([^"]+)"\]/);
-            const testId = testIdMatch ? testIdMatch[1] : '';
-            
-            // Use locator chaining to get more precise element
-            code += `    const container = ${pageName}.locator('[data-testid="${testId}"]');\n`;
-            code += `    await container.waitFor({ state: 'visible' });\n`;
-            code += `    await container.locator('${tagName}:has-text("${textContent}")').click();\n\n`;
-          } else {
-            // Tag + text selector
-            code += `    await ${pageName}.locator('${tagName}:has-text("${textContent}")').waitFor({ state: 'visible' });\n`;
-            code += `    await ${pageName}.locator('${tagName}:has-text("${textContent}")').click();\n\n`;
-          }
-        } else {
-          code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
-          code += `    await ${pageName}.click('${action.selector}');\n\n`;
-        }
-        break;
-      case 'type':
-        code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
-        code += `    await ${pageName}.type('${action.selector}', '${action.value}');\n\n`;
-        break;
-      case 'select':
-        code += `    await ${pageName}.waitForSelector('${action.selector}');\n`;
-        code += `    await ${pageName}.select('${action.selector}', '${action.value}');\n\n`;
-        break;
-      case 'assertion':
-        code += `    await expect(${pageName}).toMatchElement('${action.selector}', {\n`;
-        code += `      text: '${action.expectedText}'\n`;
-        code += `    });\n\n`;
-        break;
-      case 'color-assertion':
-        code += `    const element = await ${pageName}.$('${action.selector}');\n`;
-        code += `    const color = await ${pageName}.evaluate(el => getComputedStyle(el).color, element);\n`;
-        code += `    expect(color).toBe('${action.expectedColor}');\n\n`;
-        break;
-      case 'visible':
-        code += `    await expect(${pageName}).toMatchElement('${action.selector}', {\n`;
-        code += `    visible: true\n`;
-        code += `    });\n\n`;
-        break;
-      case 'comment':
-        code += `    // ${action.description}\n`;
-        break;
-      case 'wait':
-        code += `    // Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
-        code += `    await new Promise(resolve => setTimeout(resolve, ${action.duration * 1000}));\n\n`;
-        break;
-    }
-  });
-
-  console.log('✅ Code generation complete');
-  return code;
-}
-
 function generatePlaywrightCode(pageName = 'page') {
   console.log(`⚙️ Starting Playwright code generation for ${pageName}`);
   
@@ -487,36 +419,46 @@ function generatePlaywrightCode(pageName = 'page') {
     code += `// ${action.description}\n`;
     switch (action.type) {
       case 'click':
-      code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
-      code += `  await ${pageName}.locator('xpath=${action.selector}').click();\n\n`;
+      code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
+      code += `await ${pageName}.locator('xpath=${action.selector}').click();\n\n`;
         break;
       case 'type':
-        code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
         // Check if this is for a contenteditable element
         if (action.description && action.description.includes('contenteditable')) {
           // For contenteditable elements, use evaluate to set innerHTML
-          code += `  await ${pageName}.locator('xpath=${action.selector}').evaluate(el => { el.innerHTML = '${action.value.replace(/'/g, "\\'")}'; });\n\n`;
+          code += `await ${pageName}.locator('xpath=${action.selector}').evaluate(el => { el.innerHTML = '${action.value.replace(/'/g, "\\'")}'; });\n\n`;
         } else {
           // For regular inputs, use fill method
-          code += `  await ${pageName}.locator('xpath=${action.selector}').fill('${action.value}');\n\n`;
+          code += `await ${pageName}.locator('xpath=${action.selector}').fill('${action.value}');\n\n`;
         }
         break;
       case 'select':
-        code += `  await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `  await ${pageName}.locator('xpath=${action.selector}').selectOption('${action.value}');\n\n`;
+        code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
+        code += `await ${pageName}.locator('xpath=${action.selector}').selectOption('${action.value}');\n\n`;
         break;
       case 'assertion':
-        code += `  await expect(${pageName}.getByText('${action.expectedText}', { exact: true })).toBeVisible();\n\n`;
+        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveText('${action.expectedText}');\n\n`;
+        break;
+      case 'color-assertion':
+        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveCSS('color', '${action.expectedColor}');\n\n`;
+        break;
+      case 'background-color-assertion':
+        if (action.description && action.description.includes('inherited')) {
+          // Add a comment about the inherited background color
+          code += `// Note: This element has a transparent background and inherits the background color from its parent\n`;
+        }
+        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveCSS('background-color', '${action.expectedBgColor}');\n\n`;
         break;
       case 'visible':
-        code += `  await expect(${pageName}.locator('xpath=${action.selector}')).toBeVisible();\n\n`;
+        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toBeVisible();\n\n`;
         break;
       case 'comment':
-        code += `  // ${action.description}\n`;
+        code += `// ${action.description}\n`;
         break;
       case 'wait':
-        code += `  // Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
-        code += `  await ${pageName}.waitForTimeout(${action.duration * 1000});\n\n`;
+        code += `// Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
+        code += `await ${pageName}.waitForTimeout(${action.duration * 1000});\n\n`;
         break;
     }
   });

@@ -2,7 +2,7 @@ import { expect, Page } from '@playwright/test';
 
 import { runTest, TestContext } from '../../helpers/index.ts';
 import { getTestConfig } from '../../config/test-config.ts';
-import { addStudent, duplicateCourse, selectDateToday, selectDateNextMonth, escapeStudentWelcomeModal } from '../../components/index.ts';
+import { addStudent, duplicateCourse, selectDateToday, selectDateNextMonth, escapeStudentWelcomeModal, escapeUserGuide } from '../../components/index.ts';
 
 test('should create and delete a module', async () => {
   console.log('🚀 Starting module management test...');
@@ -78,6 +78,11 @@ async function testFn(ctxt: TestContext) {
   // student to do assignment
   await makeAllAttemptsCorrect(studentPage);
   await makeAttemptsPartiallyCorrect(studentPage);
+
+  // instructor to check the assignment
+  await instructorPage.goto(ctxt.courseUrl);
+  await validateAssignmentResultOverview(instructorPage);
+  console.log('✅ Instructor page loaded');
   
   console.log('🎉 Test completed successfully!');
 }
@@ -124,6 +129,10 @@ async function finalizeAssignment(instructorPage: Page, assignmentName: string) 
   // Click on "Finalizing..."
   await instructorPage.locator('[data-testid="publish-assignment-modal"] button:has-text("Finalize")').waitFor({ state: 'visible' });
   await instructorPage.locator('[data-testid="publish-assignment-modal"] button:has-text("Finalize")').click();
+
+  // Click on "Continue building course content"
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Continue building course content"]/..').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Continue building course content"]/..').click();
 }
 
 async function makeAllAttemptsCorrect(studentPage: Page) {
@@ -261,7 +270,7 @@ async function makeAttemptsPartiallyCorrect(studentPage: Page) {
   // Assert text "Almost there!" exists
   await expect(studentPage.getByText('Almost there!', { exact: true })).toBeVisible();
   // Assert text "0.25" exists
-  await expect(studentPage.getByText('0.25', { exact: true })).toBeVisible();
+  await expect(studentPage.getByTestId('question-details').getByText('0.25', { exact: true })).toBeVisible();
 
   // Assert text "Attempts: 1/3" exists
   await expect(studentPage.getByText('Attempts: 1/3', { exact: true })).toBeVisible();
@@ -284,7 +293,7 @@ async function makeAttemptsPartiallyCorrect(studentPage: Page) {
   // Assert text "Incorrect!" exists
   await expect(studentPage.getByText('Incorrect!', { exact: true })).toBeVisible();
   // Assert text "0/2 points" exists
-    await expect(studentPage.getByText('0/2 points', { exact: true })).toBeVisible();
+  await expect(studentPage.getByText('0/2 points', { exact: true })).toBeVisible();
 
   // Assert text "Attempts: 2/3" exists
   await expect(studentPage.getByText('Attempts: 2/3', { exact: true })).toBeVisible();
@@ -332,4 +341,57 @@ async function makeAttemptsPartiallyCorrect(studentPage: Page) {
 
   // Assert text "2/2" exists
   await expect(studentPage.locator('xpath=//div[normalize-space(text())="points"]/..').getByText('1/2', { exact: true })).toBeVisible();
+}
+
+async function validateAssignmentResultOverview(instructorPage: Page) {
+  console.log('🔍 Starting assignment result overview validation...');
+
+  // Click on "Assignments"
+  console.log('👆 Clicking on Assignments tab...');
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Assignments"]/..').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//span[normalize-space(text())="Assignments"]/..').click();
+  console.log('✅ Assignments tab clicked');
+
+  console.log('🚫 Escaping any user guide popups...');
+  await escapeUserGuide(instructorPage);
+  console.log('✅ User guide escaped');
+
+  // Click on "makeAttemptsPartiallyCorrect"
+  console.log('👆 Opening makeAttemptsPartiallyCorrect assignment...');
+  await instructorPage.locator('div').filter({ hasText: /^makeAttemptsPartiallyCorrect$/ }).first().waitFor({ state: 'visible' });
+  await instructorPage.locator('div').filter({ hasText: /^makeAttemptsPartiallyCorrect$/ }).first().click();
+  console.log('✅ Assignment opened');
+
+  // Click on "Result overview"
+  console.log('👆 Opening Result overview section...');
+  await instructorPage.locator('xpath=//div[normalize-space(text())="Result overview"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//div[normalize-space(text())="Result overview"]').click();
+  console.log('✅ Result overview section opened');
+
+  // Assert text "1m" exists
+  console.log('✨ Validating average time spent...');
+  await expect(instructorPage.locator('xpath=//*[@data-testid="avg-time-spent"]')).toHaveText('1m');
+  console.log('✅ Average time spent validated: 1m');
+
+  // Assert text "1/2" exists
+  console.log('✨ Validating average score...');
+  await expect(instructorPage.locator('xpath=//*[@data-testid="avg-score"]')).toHaveText('1/2');
+  console.log('✅ Average score validated: 1/2');
+
+  // Assert text "1/1" exists
+  console.log('✨ Validating total submissions...');
+  await expect(instructorPage.locator('xpath=//*[@data-testid="total-submissions"]')).toHaveText('1/1');
+  console.log('✅ Total submissions validated: 1/1');
+
+  // Click on "View details"
+  console.log('👆 Opening detailed view...');
+  await instructorPage.locator('xpath=//*[@data-testid="row"').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//*[@data-testid="row"').click();
+  console.log('✅ Detailed view opened');
+
+  // Click on "Student’s work"
+  await instructorPage.locator('xpath=//div[normalize-space(text())="Student’s work"]').waitFor({ state: 'visible' });
+  await instructorPage.locator('xpath=//div[normalize-space(text())="Student’s work"]').click();
+
+  console.log('🎉 Assignment result overview validation completed successfully!');
 }

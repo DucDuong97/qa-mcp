@@ -21,7 +21,7 @@ export async function escapeUserGuide(page: Page) {
 export async function escapeStudentWelcomeModal(studentPage: Page) {
   let laterButton = studentPage.locator('xpath=//*[@data-testid="modal-secondary-button"]');
   try {
-    await laterButton.waitFor({ state: 'visible', timeout: 2000 });
+    await laterButton.waitFor({ state: 'visible', timeout: 3000 });
     await laterButton.click();
   } catch (error) {
     // No more buttons found, break the loop
@@ -432,7 +432,6 @@ export async function selectDateToday(instructorPage: Page) {
 
   const dateTooltip = instructorPage.locator(`.Tooltip`)
   await dateTooltip.waitFor({ state: 'visible' });
-  await dateTooltip.click();
 
   console.log(`[Date tooltip] selecting [aria-label="${monthName} ${day}, ${year}"]`);
 
@@ -476,68 +475,100 @@ export async function duplicateCourse(instructorPage: Page, context: TestContext
   newCourseName: string,
   courseNameToCopy: string,
 }) {
+  console.log('🚀 Starting course duplication process...');
+  console.log(`📝 Parameters: newCourseName="${newCourseName}", courseNameToCopy="${courseNameToCopy}"`);
+
   // Step 1: Click "Create new course"
+  console.log('👆 Step 1: Clicking "Create new course"...');
   await expect(instructorPage.getByText('Create new course', { exact: true })).toBeVisible();
   await instructorPage.getByText('Create new course', { exact: true }).click();
+  console.log('✅ "Create new course" clicked successfully');
 
   // Step 2: Select "Duplicate a course"
+  console.log('👆 Step 2: Selecting "Duplicate a course"...');
   await expect(instructorPage.getByText('Duplicate a course', { exact: true })).toBeVisible();
   await instructorPage.getByText('Duplicate a course', { exact: true }).click({ force: true });
+  console.log('✅ "Duplicate a course" selected successfully');
 
   // Click on "input"
+  console.log('🔍 Clicking search input...');
   await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').waitFor({ state: 'visible' });
   await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').click();
+  console.log('✅ Search input clicked');
 
   // Type "Automation Test - Student Do Assignment" into Search course name
+  console.log(`⌨️ Typing course name to search: "${courseNameToCopy}"...`);
   await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').waitFor({ state: 'visible' });
   await instructorPage.locator('xpath=//*[@data-testid="shared-by-community-search-input"]').fill(courseNameToCopy);
   await instructorPage.waitForTimeout(2000);
+  console.log('✅ Course name entered in search');
 
   // Step 4: Click "Duplicate course"
+  console.log('👆 Step 4: Clicking "Duplicate course" button...');
   const buttons = instructorPage.getByText('Duplicate course', { exact: true }).first();
   await expect(buttons).toBeVisible(); 
   await buttons.click();    
+  console.log('✅ "Duplicate course" button clicked');
 
   // Step 5: Confirm modal
+  console.log('👆 Step 5: Confirming modal...');
   const modalPrimaryBtn = instructorPage.locator('[data-testid="modal-primary-button"]');
   await expect(modalPrimaryBtn).toBeVisible();
   await modalPrimaryBtn.click();
+  console.log('✅ Modal confirmed');
 
   // Step 6: Fill course name
+  console.log(`📝 Step 6: Filling new course name: "${newCourseName}"...`);
   const courseNameInput = instructorPage.locator('input[placeholder="Enter course name"]');
   await expect(courseNameInput).toBeVisible();
   await courseNameInput.fill(newCourseName);
+  console.log('✅ New course name filled');
 
   // Step 7: Set start and end dates
+  console.log('📅 Step 7: Setting course dates...');
   const startDatePicker = instructorPage.getByTestId('date-picker__startDate');
   await startDatePicker.waitFor({ state: 'visible' });
   await startDatePicker.click();
   await selectDateToday(instructorPage);
+  console.log('✅ Start date set to today');
   
   // End date
   const endDatePicker = instructorPage.getByTestId('date-picker__endDate');
   await endDatePicker.waitFor({ state: 'visible' });
   await endDatePicker.click();
   await selectDateNextMonth(instructorPage);
+  console.log('✅ End date set to next month');
     
   // Step 8: Select course plan
+  console.log('💎 Step 8: Selecting Advanced course plan...');
   await expect(instructorPage.getByText('Advanced', { exact: true })).toBeVisible();
   await instructorPage.getByText('Advanced', { exact: true }).click();
+  console.log('✅ Advanced plan selected');
 
   // Step 9: Click Create button
+  console.log('👆 Step 9: Clicking Create button...');
   const createBtn = instructorPage.getByTestId('create-course-btn');
   await expect(createBtn).toBeVisible();
   await createBtn.click();
+  console.log('✅ Create button clicked');
 
   // Step 10: Confirm final modal
+  console.log('👆 Step 10: Confirming final modal...');
   await expect(modalPrimaryBtn).toBeVisible();
   await modalPrimaryBtn.click();
+  console.log('✅ Final modal confirmed');
   
   await escapeUserGuide(instructorPage);
+  console.log('✅ User guide escaped');
 
   context.courseUrl = instructorPage.url();
+  console.log(`🔗 Course URL set: ${context.courseUrl}`);
+
+  console.log('🎉 Course duplication completed successfully!');
 
   return async () => {
+    console.log('🗑️ Cleanup: Deleting course...');
     await deleteCourse(instructorPage, context.courseUrl);
+    console.log('✅ Course deleted successfully');
   }
 }
