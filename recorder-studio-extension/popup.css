@@ -36,6 +36,46 @@ body {
   flex-wrap: wrap;
   width: 100%;
 }
+
+#saveRecordBtn {
+  background-color: #0f766e;
+  color: white;
+}
+
+#showRecordsBtn {
+  background-color: #7c3aed;
+  color: white;
+}
+
+.record-input-row {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+}
+
+#recordNameInput,
+#recordSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#confirmSaveRecordBtn,
+#openRecordBtn {
+  background-color: #16a34a;
+  color: white;
+}
+
+#cancelSaveRecordBtn,
+#cancelRecordsBtn {
+  background-color: #666;
+  color: white;
+}
 button {
   padding: 8px 12px;
   border: none;
@@ -193,6 +233,8 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
 }
 .recording-indicator {
   display: flex;
@@ -271,7 +313,7 @@ button:disabled {
   margin-bottom: 4px;
 }
 
-.comment-section {
+.common-tools {
   display: flex;
   box-sizing: border-box;
   flex-direction: column;

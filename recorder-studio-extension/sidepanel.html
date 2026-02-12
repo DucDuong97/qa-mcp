@@ -10,13 +10,27 @@
       <div class="controls">
         <button id="recordBtn">Start Recording</button>
         <button id="clearBtn">Clear</button>
+        <button id="saveRecordBtn">Save Record</button>
+        <button id="showRecordsBtn">Show Records</button>
       </div>
-      <div class="assertion-tools">
+      <div id="saveRecordRow" class="record-input-row hidden">
+        <input type="text" id="recordNameInput" placeholder="Enter record name...">
+        <button id="confirmSaveRecordBtn">Save</button>
+        <button id="cancelSaveRecordBtn">Cancel</button>
+      </div>
+      <div id="recordsRow" class="record-input-row hidden">
+        <select id="recordSelect">
+          <option value="">Select a record...</option>
+        </select>
+        <button id="openRecordBtn">Open</button>
+        <button id="cancelRecordsBtn">Cancel</button>
+      </div>
+      <div class="assertion-tools hidden">
         <button id="assertTextBtn" class="assertion-btn" disabled>Assert Text</button>
         <button id="assertColorBtn" class="assertion-btn" disabled>Assert Color</button>
         <button id="assertBgColorBtn" class="assertion-btn" disabled>Assert Bg Color</button>
       </div>
-      <div class="comment-section">
+      <div class="common-tools hidden">
         <div class="action-buttons">
           <button id="addCommentBtn">Add Comment</button>
           <button id="addWaitBtn">Active Wait</button>
@@ -34,7 +48,7 @@
       <div class="recording-indicator">
         <span id="recordingStatus">Not Recording</span>
       </div>
-      <div id="actionCount">0 actions recorded</div>
+      <div id="currentRecordLabel">Record: Unsaved</div>
     </div>
 
     <div class="action-list" id="actionList">
@@ -49,6 +63,7 @@
     </div>
   </div>
   <script src="src/cdp.js"></script>
+  <script src="src/records.js"></script>
   <script src="popup.js"></script>
 </body>
 </html> 

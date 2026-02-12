@@ -1,5 +1,8 @@
 let isRecording = false;
 let recordedActions = [];
+let savedRecords = [];
+let currentRecordName = '';
+let isRecordingSaved = true;
 
 console.log('🎯 Initializing Recorder Studio Side Panel');
 
@@ -8,6 +11,8 @@ function resetUIState() {
   const recordBtn = document.getElementById('recordBtn');
   const recordingStatus = document.getElementById('recordingStatus');
   const assertionBtns = document.querySelectorAll('.assertion-btn');
+  const assertionTools = document.querySelector('.assertion-tools');
+  const commonTools = document.querySelector('.common-tools');
   
   isRecording = false;
   recordBtn.textContent = 'Start Recording';
@@ -15,6 +20,10 @@ function resetUIState() {
   assertionBtns.forEach(btn => btn.disabled = true);
   recordingStatus.textContent = 'Not Recording';
   document.querySelector('.recording-indicator')?.classList.remove('active');
+  
+  // Hide tools when not recording
+  assertionTools?.classList.add('hidden');
+  commonTools?.classList.add('hidden');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const runBtn = document.getElementById('runBtn');
 
   const clearBtn = document.getElementById('clearBtn');
+  const saveRecordBtn = document.getElementById('saveRecordBtn');
+  const showRecordsBtn = document.getElementById('showRecordsBtn');
+  const saveRecordRow = document.getElementById('saveRecordRow');
+  const recordsRow = document.getElementById('recordsRow');
+  const recordNameInput = document.getElementById('recordNameInput');
+  const confirmSaveRecordBtn = document.getElementById('confirmSaveRecordBtn');
+  const cancelSaveRecordBtn = document.getElementById('cancelSaveRecordBtn');
+  const recordSelect = document.getElementById('recordSelect');
+  const openRecordBtn = document.getElementById('openRecordBtn');
+  const cancelRecordsBtn = document.getElementById('cancelRecordsBtn');
   const assertTextBtn = document.getElementById('assertTextBtn');
   const assertColorBtn = document.getElementById('assertColorBtn');
   const assertBgColorBtn = document.getElementById('assertBgColorBtn');
@@ -35,18 +54,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const waitInput = document.getElementById('waitInput');
   const waitInputRow = document.getElementById('waitInputRow');
   const recordingStatus = document.getElementById('recordingStatus');
-  const actionCount = document.getElementById('actionCount');
+
+  savedRecords = window.RecorderStudioRecords?.loadRecordsFromLocalStorage?.() || [];
+  refreshRecordOptions();
+  updateSaveButtonVisibility();
 
   // Load saved actions
   console.log('💾 Loading saved data from storage...');
-  chrome.storage.local.get(['recordedActions'], (result) => {
+  chrome.storage.local.get(['recordedActions', 'currentRecordName'], (result) => {
     console.log('📦 Loaded data from storage:', result);
     if (result.recordedActions) {
       recordedActions = result.recordedActions;
       console.log('🔄 Restoring recorded actions:', recordedActions);
       updateActionList();
-      actionCount.textContent = `${recordedActions.length} actions recorded`;
     }
+
+    if (typeof result.currentRecordName === 'string') {
+      setCurrentRecordName(result.currentRecordName, { persist: false });
+    } else {
+      setCurrentRecordName('', { persist: false });
+    }
+
+    setRecordingSaved(!(recordedActions.length > 0 && !currentRecordName));
   });
 
   // Listen for visibility changes
@@ -79,11 +108,23 @@ document.addEventListener('DOMContentLoaded', () => {
     isRecording = !isRecording;
     console.log(`🎥 Recording ${isRecording ? 'resumed' : 'paused'}`);
     
+    const assertionTools = document.querySelector('.assertion-tools');
+    const commonTools = document.querySelector('.common-tools');
+    
     recordBtn.textContent = isRecording ? 'Pause Recording' : 'Resume Recording';
     recordBtn.classList.toggle('recording');
     document.querySelectorAll('.assertion-btn').forEach(btn => btn.disabled = !isRecording);
     recordingStatus.textContent = isRecording ? 'Recording' : 'Paused';
     document.querySelector('.recording-indicator').classList.toggle('active', isRecording);
+
+    // Show/hide tools based on recording state
+    if (isRecording) {
+      assertionTools?.classList.remove('hidden');
+      commonTools?.classList.remove('hidden');
+    } else {
+      assertionTools?.classList.add('hidden');
+      commonTools?.classList.add('hidden');
+    }
 
     // Send message through background script
     chrome.runtime.sendMessage({
@@ -224,6 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🧹 Clearing all recorded actions');
     recordedActions = [];
     isRecording = false;
+    setRecordingSaved(true);
+    setCurrentRecordName('');
     chrome.storage.local.set({ recordedActions: [] });
     updateActionList();
     
@@ -240,6 +283,79 @@ document.addEventListener('DOMContentLoaded', () => {
       isRecording: false
     });
   });
+
+  saveRecordBtn.addEventListener('click', () => {
+    if (!saveRecordRow || !recordNameInput) {
+      return;
+    }
+
+    if (currentRecordName) {
+      const selectedRecord = window.RecorderStudioRecords?.findRecordByName?.(savedRecords, currentRecordName);
+      if (selectedRecord) {
+        saveCurrentRecord(currentRecordName, { skipOverwriteConfirm: true, hideInputAfterSave: false });
+        return;
+      }
+    }
+
+    if (!recordsRow.classList.contains('hidden')) {
+      recordsRow.classList.add('hidden');
+      showRecordsBtn.textContent = 'Show Records';
+    }
+
+    recordNameInput.value = currentRecordName || '';
+    saveRecordRow.classList.remove('hidden');
+    recordNameInput.focus();
+  });
+
+  cancelSaveRecordBtn.addEventListener('click', () => {
+    hideSaveRecordRow();
+  });
+
+  confirmSaveRecordBtn.addEventListener('click', () => {
+    saveCurrentRecord();
+  });
+
+  recordNameInput.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      saveCurrentRecord();
+    }
+  });
+
+  showRecordsBtn.addEventListener('click', () => {
+    if (!recordsRow || !showRecordsBtn) {
+      return;
+    }
+
+    const shouldShow = recordsRow.classList.contains('hidden');
+
+    if (shouldShow) {
+      if (!saveRecordRow.classList.contains('hidden')) {
+        hideSaveRecordRow();
+      }
+      refreshRecordOptions();
+      recordsRow.classList.remove('hidden');
+      showRecordsBtn.textContent = 'Hide Records';
+    } else {
+      recordsRow.classList.add('hidden');
+      showRecordsBtn.textContent = 'Show Records';
+    }
+  });
+
+  cancelRecordsBtn.addEventListener('click', () => {
+    if (!recordsRow || !showRecordsBtn) {
+      return;
+    }
+    recordsRow.classList.add('hidden');
+    showRecordsBtn.textContent = 'Show Records';
+  });
+
+  openRecordBtn.addEventListener('click', () => {
+    openSelectedRecord();
+  });
+
+  recordSelect.addEventListener('change', () => {
+    openSelectedRecord();
+  });
 });
 
 
@@ -248,6 +364,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'ACTION_RECORDED') {
     console.log('📝 New action recorded:', message.action);
     recordedActions.push(message.action);
+    setRecordingSaved(false);
     chrome.storage.local.set({ recordedActions });
     updateActionList();
   }
@@ -269,6 +386,7 @@ function addCommentAction() {
     };
     
     recordedActions.push(commentAction);
+    setRecordingSaved(false);
     chrome.storage.local.set({ recordedActions });
     updateActionList();
     
@@ -294,6 +412,7 @@ function addWaitAction() {
     };
     
     recordedActions.push(waitAction);
+    setRecordingSaved(false);
     chrome.storage.local.set({ recordedActions });
     updateActionList();
   }
@@ -408,6 +527,7 @@ function updateActionList() {
         // Reorder the recordedActions array
         const [movedItem] = recordedActions.splice(fromIndex, 1);
         recordedActions.splice(toIndex, 0, movedItem);
+        setRecordingSaved(false);
         
         // Save to storage and update UI
         chrome.storage.local.set({ recordedActions });
@@ -425,6 +545,7 @@ function updateActionList() {
       const index = parseInt(e.target.dataset.index);
       console.log('🗑️ Deleting action at index:', index);
       recordedActions.splice(index, 1);
+      setRecordingSaved(false);
       chrome.storage.local.set({ recordedActions });
       updateActionList();
     });
@@ -432,4 +553,143 @@ function updateActionList() {
   
   // Scroll to the bottom of the action list
   $actionList.scrollTop = $actionList.scrollHeight;
+}
+
+function hideSaveRecordRow() {
+  const saveRecordRow = document.getElementById('saveRecordRow');
+  const recordNameInput = document.getElementById('recordNameInput');
+
+  if (!saveRecordRow || !recordNameInput) {
+    return;
+  }
+
+  saveRecordRow.classList.add('hidden');
+  recordNameInput.value = '';
+}
+
+function persistSavedRecordsToLocalStorage() {
+  const persisted = window.RecorderStudioRecords?.saveRecordsToLocalStorage?.(savedRecords);
+  if (!persisted) {
+    alert('Unable to save records to localStorage.');
+  }
+}
+
+function refreshRecordOptions() {
+  const recordSelect = document.getElementById('recordSelect');
+  if (!recordSelect) {
+    return;
+  }
+
+  recordSelect.innerHTML = '';
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Select a record...';
+  recordSelect.appendChild(defaultOption);
+
+  savedRecords.forEach((record) => {
+    const option = document.createElement('option');
+    option.value = record.name;
+    option.textContent = record.name;
+    recordSelect.appendChild(option);
+  });
+}
+
+function saveCurrentRecord(recordNameOverride = '', options = {}) {
+  const { skipOverwriteConfirm = false, hideInputAfterSave = true } = options;
+  const recordNameInput = document.getElementById('recordNameInput');
+  if (!recordNameInput) {
+    return;
+  }
+
+  const recordName = (recordNameOverride || recordNameInput.value).trim();
+  if (!recordName) {
+    alert('Please enter a record name.');
+    return;
+  }
+
+  if (!recordedActions.length) {
+    alert('No actions to save.');
+    return;
+  }
+
+  const existingRecord = window.RecorderStudioRecords?.findRecordByName?.(savedRecords, recordName);
+  if (existingRecord && !skipOverwriteConfirm) {
+    const shouldOverwrite = window.confirm(`Record "${recordName}" already exists. Overwrite it?`);
+    if (!shouldOverwrite) {
+      return;
+    }
+  }
+
+  savedRecords = window.RecorderStudioRecords?.upsertRecord?.(savedRecords, recordName, recordedActions)?.records || savedRecords;
+  persistSavedRecordsToLocalStorage();
+  setRecordingSaved(true);
+  setCurrentRecordName(recordName);
+  refreshRecordOptions();
+  const recordSelect = document.getElementById('recordSelect');
+  if (recordSelect) {
+    recordSelect.value = recordName;
+  }
+  if (hideInputAfterSave) {
+    hideSaveRecordRow();
+  }
+}
+
+function openSelectedRecord() {
+  const recordSelect = document.getElementById('recordSelect');
+  const recordsRow = document.getElementById('recordsRow');
+  const showRecordsBtn = document.getElementById('showRecordsBtn');
+
+  if (!recordSelect) {
+    return;
+  }
+
+  const selectedName = recordSelect.value;
+  if (!selectedName) {
+    return;
+  }
+
+  const selectedRecord = window.RecorderStudioRecords?.findRecordByName?.(savedRecords, selectedName);
+  if (!selectedRecord) {
+    alert('Selected record could not be found.');
+    return;
+  }
+
+  recordedActions = window.RecorderStudioRecords?.cloneActions?.(selectedRecord.actions || []) || [];
+  setRecordingSaved(true);
+  setCurrentRecordName(selectedName);
+  chrome.storage.local.set({ recordedActions });
+  updateActionList();
+
+  if (recordsRow && showRecordsBtn) {
+    recordsRow.classList.add('hidden');
+    showRecordsBtn.textContent = 'Show Records';
+  }
+}
+
+function setCurrentRecordName(recordName, options = {}) {
+  const { persist = true } = options;
+  currentRecordName = typeof recordName === 'string' ? recordName.trim() : '';
+
+  const currentRecordLabel = document.getElementById('currentRecordLabel');
+  if (currentRecordLabel) {
+    currentRecordLabel.textContent = `Record: ${currentRecordName || 'Unsaved'}`;
+  }
+
+  if (persist) {
+    chrome.storage.local.set({ currentRecordName });
+  }
+}
+
+function setRecordingSaved(isSaved) {
+  isRecordingSaved = Boolean(isSaved);
+  updateSaveButtonVisibility();
+}
+
+function updateSaveButtonVisibility() {
+  const saveRecordBtn = document.getElementById('saveRecordBtn');
+  if (!saveRecordBtn) {
+    return;
+  }
+
+  saveRecordBtn.disabled = isRecordingSaved;
 }
