@@ -46,6 +46,40 @@
         .copy-button:hover {
             background-color: #45a049;
         }
+        .select-container {
+            margin-bottom: 20px;
+        }
+        .select-container label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .page-select {
+            width: 100%;
+            max-width: 300px;
+            height: 40px;
+            padding: 8px 35px 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+        .page-select:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -53,9 +87,19 @@
         <div class="header">
             <h1>Generated Puppeteer Test Code</h1>
         </div>
+        <div class="select-container">
+            <label for="pageSelect">Page Object:</label>
+            <select id="pageSelect" class="page-select">
+                <option value="instructorPage" selected>Instructor Page</option>
+                <option value="studentPage">Student Page</option>
+                <option value="superAdminPage">Super Admin Page</option>
+                <option value="collegeInstructorPage">College Instructor Page</option>
+            </select>
+        </div>
         <pre><code id="codeBlock"></code></pre>
         <button class="copy-button" id="copyButton">Copy Code</button>
     </div>
+    <script src="src/playwright.js"></script>
     <script src="code-viewer.js"></script>
 </body>     
 </html> 

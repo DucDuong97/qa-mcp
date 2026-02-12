@@ -5,6 +5,7 @@
   "description": "Record user actions and generate Puppeteer test code",
   "permissions": [
     "activeTab",
+    "debugger",
     "scripting",
     "storage",
     "sidePanel",
@@ -28,7 +29,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["src/selector.js", "content.js"]
     }
   ],
   "side_panel": {

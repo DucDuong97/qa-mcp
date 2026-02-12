@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const recordBtn = document.getElementById('recordBtn');
   const generateBtn = document.getElementById('generateBtn');
+  const runBtn = document.getElementById('runBtn');
 
-  console.log('🔄 Generate button:', generateBtn);
   const clearBtn = document.getElementById('clearBtn');
   const assertTextBtn = document.getElementById('assertTextBtn');
   const assertColorBtn = document.getElementById('assertColorBtn');
@@ -34,12 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const addWaitBtn = document.getElementById('addWaitBtn');
   const waitInput = document.getElementById('waitInput');
   const waitInputRow = document.getElementById('waitInputRow');
-  const actionList = document.getElementById('actionList');
-  const codeOutput = document.getElementById('codeOutput');
   const recordingStatus = document.getElementById('recordingStatus');
   const actionCount = document.getElementById('actionCount');
-  const toolSelect = document.getElementById('toolSelect');
-  const pageSelect = document.getElementById('pageSelect');
 
   // Load saved actions
   console.log('💾 Loading saved data from storage...');
@@ -182,20 +178,46 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   generateBtn.addEventListener('click', () => {
-    console.log('⚙️ Generating test code');
-    const selectedTool = toolSelect.value;
-    const selectedPage = pageSelect.value;
-    const code = selectedTool === 'puppeteer' 
-      ? generatePuppeteerCode(selectedPage) 
-      : generatePlaywrightCode(selectedPage);
-    console.log('📜 Generated code:', code);
+    console.log('⚙️ Opening code viewer');
     
-    // Open code viewer in new tab with the generated code
-    const encodedCode = encodeURIComponent(code);
+    // Pass recorded actions to code viewer
+    const encodedActions = encodeURIComponent(JSON.stringify(recordedActions));
     const viewerUrl = chrome.runtime.getURL('code-viewer.html');
     chrome.tabs.create({ 
-      url: `${viewerUrl}?code=${encodedCode}`
+      url: `${viewerUrl}?actions=${encodedActions}`
     });
+  });
+
+  runBtn.addEventListener('click', async () => {
+    if (!recordedActions?.length) {
+      alert('No actions recorded yet.');
+      return;
+    }
+
+    // If recording is on, pause it for replay stability.
+    if (isRecording) {
+      isRecording = false;
+      resetUIState();
+      chrome.runtime.sendMessage({ type: 'TOGGLE_RECORDING', isRecording: false });
+    }
+
+    const prevText = runBtn.textContent;
+    runBtn.disabled = true;
+    runBtn.textContent = 'Running...';
+
+    try {
+      if (!window.RecorderStudioCdp?.runReplay) {
+        throw new Error('CDP helper not loaded. Missing src/cdp.js?');
+      }
+      await window.RecorderStudioCdp.runReplay(recordedActions);
+      console.log('✅ Replay complete');
+    } catch (err) {
+      console.error('❌ Replay failed', err);
+      alert(`Run failed: ${err?.message || String(err)}`);
+    } finally {
+      runBtn.disabled = false;
+      runBtn.textContent = prevText;
+    }
   });
 
   clearBtn.addEventListener('click', () => {
@@ -220,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'ACTION_RECORDED') {
@@ -229,6 +252,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateActionList();
   }
 });
+
+
+// Function to add a comment action
+function addCommentAction() {
+  const commentInput = document.getElementById('commentInput');
+  const commentText = commentInput.value.trim();
+  
+  if (commentText) {
+    console.log('📝 Adding comment checkpoint:', commentText);
+    
+    const commentAction = {
+      type: 'comment',
+      description: commentText,
+      timestamp: new Date().toISOString()
+    };
+    
+    recordedActions.push(commentAction);
+    chrome.storage.local.set({ recordedActions });
+    updateActionList();
+    
+    // Clear the input after adding
+    commentInput.value = '';
+  }
+}
+
+
+// Function to add a wait action
+function addWaitAction() {
+  const waitInput = document.getElementById('waitInput');
+  const waitTime = parseInt(waitInput.value);
+  
+  if (waitTime > 0) {
+    console.log('⏱️ Adding wait action:', waitTime, 'seconds');
+    
+    const waitAction = {
+      type: 'wait',
+      duration: waitTime,
+      description: `${waitTime} second${waitTime === 1 ? '' : 's'}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    recordedActions.push(waitAction);
+    chrome.storage.local.set({ recordedActions });
+    updateActionList();
+  }
+}
+
 
 function updateActionList() {
   console.log('🔄 Updating action list UI');
@@ -363,106 +433,3 @@ function updateActionList() {
   // Scroll to the bottom of the action list
   $actionList.scrollTop = $actionList.scrollHeight;
 }
-
-// Function to add a comment action
-function addCommentAction() {
-  const commentInput = document.getElementById('commentInput');
-  const commentText = commentInput.value.trim();
-  
-  if (commentText) {
-    console.log('📝 Adding comment checkpoint:', commentText);
-    
-    const commentAction = {
-      type: 'comment',
-      description: commentText,
-      timestamp: new Date().toISOString()
-    };
-    
-    recordedActions.push(commentAction);
-    chrome.storage.local.set({ recordedActions });
-    updateActionList();
-    
-    // Clear the input after adding
-    commentInput.value = '';
-  }
-}
-
-// Function to add a wait action
-function addWaitAction() {
-  const waitInput = document.getElementById('waitInput');
-  const waitTime = parseInt(waitInput.value);
-  
-  if (waitTime > 0) {
-    console.log('⏱️ Adding wait action:', waitTime, 'seconds');
-    
-    const waitAction = {
-      type: 'wait',
-      duration: waitTime,
-      description: `${waitTime} second${waitTime === 1 ? '' : 's'}`,
-      timestamp: new Date().toISOString()
-    };
-    
-    recordedActions.push(waitAction);
-    chrome.storage.local.set({ recordedActions });
-    updateActionList();
-  }
-}
-
-function generatePlaywrightCode(pageName = 'page') {
-  console.log(`⚙️ Starting Playwright code generation for ${pageName}`);
-  
-  let code = "";
-  
-  recordedActions.forEach((action, index) => {
-    console.log(`🔨 Processing action ${index + 1}/${recordedActions.length}:`, action);
-
-    code += `// ${action.description}\n`;
-    switch (action.type) {
-      case 'click':
-      code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
-      code += `await ${pageName}.locator('xpath=${action.selector}').click();\n\n`;
-        break;
-      case 'type':
-        code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
-        // Check if this is for a contenteditable element
-        if (action.description && action.description.includes('contenteditable')) {
-          // For contenteditable elements, use evaluate to set innerHTML
-          code += `await ${pageName}.locator('xpath=${action.selector}').evaluate(el => { el.innerHTML = '${action.value.replace(/'/g, "\\'")}'; });\n\n`;
-        } else {
-          // For regular inputs, use fill method
-          code += `await ${pageName}.locator('xpath=${action.selector}').fill('${action.value}');\n\n`;
-        }
-        break;
-      case 'select':
-        code += `await ${pageName}.locator('xpath=${action.selector}').waitFor({ state: 'visible' });\n`;
-        code += `await ${pageName}.locator('xpath=${action.selector}').selectOption('${action.value}');\n\n`;
-        break;
-      case 'assertion':
-        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveText('${action.expectedText}');\n\n`;
-        break;
-      case 'color-assertion':
-        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveCSS('color', '${action.expectedColor}');\n\n`;
-        break;
-      case 'background-color-assertion':
-        if (action.description && action.description.includes('inherited')) {
-          // Add a comment about the inherited background color
-          code += `// Note: This element has a transparent background and inherits the background color from its parent\n`;
-        }
-        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toHaveCSS('background-color', '${action.expectedBgColor}');\n\n`;
-        break;
-      case 'visible':
-        code += `await expect(${pageName}.locator('xpath=${action.selector}')).toBeVisible();\n\n`;
-        break;
-      case 'comment':
-        code += `// ${action.description}\n`;
-        break;
-      case 'wait':
-        code += `// Active wait for ${action.duration} second${action.duration === 1 ? '' : 's'}\n`;
-        code += `await ${pageName}.waitForTimeout(${action.duration * 1000});\n\n`;
-        break;
-    }
-  });
-  
-  console.log('✅ Code generation complete');
-  return code;
-} 

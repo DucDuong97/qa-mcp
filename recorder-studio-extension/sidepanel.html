@@ -43,28 +43,12 @@
 
     <div class="code-section">
       <div class="code-controls">
-        <div class="select-fields">
-          <div class="select-container hidden">
-            <label for="toolSelect">Tool:</label>
-            <select id="toolSelect" class="tool-select">
-              <option value="playwright" selected>Playwright</option>
-              <option value="puppeteer">Puppeteer</option>
-            </select>
-          </div>
-          <div class="select-container">
-            <label for="pageSelect">Page Object:</label>
-            <select id="pageSelect" class="page-select">
-              <option value="instructorPage" selected>Instructor Page</option>
-              <option value="studentPage">Student Page</option>
-              <option value="superAdminPage">Super Admin Page</option>
-              <option value="collegeInstructorPage">College Instructor Page</option>
-            </select>
-          </div>
-        </div>
         <button id="generateBtn">Generate Code</button>
+        <button id="runBtn">Run Code</button>
       </div>
     </div>
   </div>
+  <script src="src/cdp.js"></script>
   <script src="popup.js"></script>
 </body>
 </html> 
